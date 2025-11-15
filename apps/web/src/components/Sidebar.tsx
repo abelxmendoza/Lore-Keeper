@@ -1,5 +1,6 @@
 import { BookMarked, CalendarDays, MessageSquareText, Plus, Sparkles } from 'lucide-react';
 
+import { Logo } from './Logo';
 import { Button } from './ui/button';
 
 const menu = [
@@ -12,9 +13,8 @@ const menu = [
 export const Sidebar = () => (
   <aside className="hidden w-64 flex-col border-r border-border/60 bg-black/20 p-6 text-white lg:flex">
     <div>
-      <p className="font-techno text-xs uppercase text-white/60">Omega Technologies</p>
-      <h2 className="mt-2 text-2xl font-semibold tracking-tight">Lore Keeper</h2>
-      <p className="text-xs text-white/50">Cyberpunk journal with GPT-4 memory.</p>
+      <Logo size="md" showText={true} />
+      <p className="mt-3 text-xs text-white/50">Cyberpunk journal with GPT-4 memory.</p>
     </div>
     <div className="mt-8 space-y-2">
       {menu.map((item) => (

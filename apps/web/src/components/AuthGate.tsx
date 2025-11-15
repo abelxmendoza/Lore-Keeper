@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 
 import { getConfigDebug, isSupabaseConfigured, supabase } from '../lib/supabase';
+import { Logo } from './Logo';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 
@@ -54,8 +55,7 @@ const AuthScreen = ({ onEmailLogin }: { onEmailLogin: (email: string) => Promise
 
   return (
     <div className="mx-auto mt-20 flex max-w-md flex-col items-center rounded-2xl border border-border/60 bg-black/30 p-10 text-center shadow-panel">
-      <p className="font-techno text-sm uppercase tracking-[0.5em] text-primary">Omega Technologies</p>
-      <h1 className="mt-6 text-4xl font-bold tracking-tight text-white">Lore Keeper</h1>
+      <Logo size="lg" showText={true} className="mb-6" />
       <p className="mt-2 text-white/70">AI-powered journal with a cyberpunk heart.</p>
       <Input
         type="email"
@@ -136,8 +136,7 @@ export const AuthGate = ({ children }: { children: ReactNode }) => {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-black via-purple-950 to-black">
         <div className="mx-auto max-w-md rounded-2xl border border-red-500/50 bg-black/40 p-10 text-center">
-          <p className="font-techno text-sm uppercase tracking-[0.5em] text-primary">Omega Technologies</p>
-          <h1 className="mt-6 text-4xl font-bold tracking-tight text-white">Lore Keeper</h1>
+          <Logo size="lg" showText={true} className="mb-6 justify-center" />
           <div className="mt-6 rounded-lg border border-red-500/30 bg-red-950/20 p-4 text-left">
             <p className="text-sm font-semibold text-red-400">Configuration Required</p>
             <p className="mt-2 text-xs text-white/70">

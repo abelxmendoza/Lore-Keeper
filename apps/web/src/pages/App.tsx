@@ -5,6 +5,7 @@ import { AuthGate } from '../components/AuthGate';
 import { ChatPanel } from '../components/ChatPanel';
 import { EntryList } from '../components/EntryList';
 import { JournalComposer } from '../components/JournalComposer';
+import { Logo } from '../components/Logo';
 import { Sidebar } from '../components/Sidebar';
 import { TagCloud } from '../components/TagCloud';
 import { TimelinePanel } from '../components/TimelinePanel';
@@ -23,7 +24,7 @@ const formatRange = (days = 7) => {
 };
 
 const AppContent = () => {
-  const { entries, timeline, tags, answer, askLoreKeeper, createEntry, summarize, loading } =
+  const { entries, timeline, tags, answer, askLoreKeeper, createEntry, summarize, loading, refreshEntries } =
     useLoreKeeper();
   const [summary, setSummary] = useState('');
   const [rangeLabel, setRangeLabel] = useState(formatRange().label);
@@ -43,7 +44,8 @@ const AppContent = () => {
         <header className="rounded-2xl border border-border/60 bg-opacity-70 bg-[radial-gradient(circle_at_top,_rgba(126,34,206,0.35),_transparent)] p-6 shadow-panel">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p className="font-techno text-xs uppercase text-white/60">Lore Keeper · Timeline Intelligence</p>
+              <Logo size="md" showText={false} className="mb-3" />
+              <p className="text-xs uppercase text-white/60">Timeline Intelligence</p>
               <h1 className="mt-1 text-3xl font-semibold">Welcome back, Archivist</h1>
             </div>
             <div className="rounded-xl border border-primary/50 px-4 py-2 text-sm text-white/70">

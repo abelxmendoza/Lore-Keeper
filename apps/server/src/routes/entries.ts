@@ -15,7 +15,7 @@ const entrySchema = z.object({
   chapterId: z.string().nullable().optional(),
   mood: z.string().nullable().optional(),
   summary: z.string().nullable().optional(),
-  source: z.enum(['chat', 'manual', 'api', 'system']).optional()
+  source: z.enum(['chat', 'manual', 'api', 'system', 'photo', 'calendar']).optional()
 });
 
 router.get('/', requireAuth, async (req: AuthenticatedRequest, res) => {

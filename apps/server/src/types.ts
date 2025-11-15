@@ -1,4 +1,4 @@
-export type MemorySource = 'chat' | 'manual' | 'api' | 'system';
+export type MemorySource = 'chat' | 'manual' | 'api' | 'system' | 'photo' | 'calendar';
 
 export type MemoryEntry = {
   id: string;

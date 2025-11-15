@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="apps/web/public/images/LoreKeeperlogo.png" alt="Lore Keeper Logo" width="300" />
+</div>
+
 # Lore Keeper by Omega Technologies
 
 Lore Keeper is an AI-powered journaling platform that blends Supabase auth, GPT-4 context, and an expressive cyberpunk UI. It automatically captures important chats, builds a memory timeline, and lets you query your past like you would ask ChatGPT.
@@ -36,6 +40,9 @@ create table if not exists public.journal_entries (
   updated_at timestamptz default now()
 );
 
+-- Create Supabase Storage bucket for photos
+-- In Supabase Dashboard: Storage > Create Bucket > Name: "photos" > Public: true
+
 create table if not exists public.daily_summaries (
   id uuid primary key,
   user_id uuid references auth.users(id) on delete cascade,
@@ -55,7 +62,12 @@ Grant `select/insert/update` on both tables to the `service_role` used by the AP
 | `/api/entries` | POST | Create a manual entry (keywords auto-tagged) |
 | `/api/entries/suggest-tags` | POST | GPT-assisted tag suggestions |
 | `/api/entries/detect` | POST | Check if a message should be auto-saved |
-| `/api/chat` | POST | “Ask Lore Keeper” – returns GPT-4 answer grounded in journal data |
+| `/api/photos/upload` | POST | Upload photo(s) and auto-generate journal entry |
+| `/api/photos/upload/batch` | POST | Upload multiple photos at once |
+| `/api/photos` | GET | Get all user photos |
+| `/api/photos/sync` | POST | Sync photo metadata from device (mobile) |
+| `/api/calendar/sync` | POST | Sync calendar events from device (mobile) - creates journal entries |
+| `/api/chat` | POST | "Ask Lore Keeper" – returns GPT-4 answer grounded in journal data |
 | `/api/timeline` | GET | Month-grouped timeline feed |
 | `/api/timeline/tags` | GET | Tag cloud metadata |
 | `/api/summary` | POST | Date range summary (weekly digest, etc.) |
@@ -65,18 +77,30 @@ All endpoints expect a Supabase auth token via `Authorization: Bearer <access_to
 ### Frontend Highlights
 
 - Auth gate with email magic link or Google OAuth
-- Chat-style journal composer with auto keyword detection (“log”, “update”, “chapter”, …)
-- Dual-column dashboard: timeline, tag cloud, AI summary, and “Ask Lore Keeper” panel
+- Chat-style journal composer with auto keyword detection ("log", "update", "chapter", …)
+- **Background Photo Processing** - Photos are processed automatically to create journal entries (no gallery UI)
+- Dual-column dashboard: timeline, tag cloud, AI summary, and "Ask Lore Keeper" panel
 - Local cache (localStorage) for offline-first memory preview
 - Dark cyberpunk palette, neon accents, Omega splash copy
+
+### Mobile App (iOS/Android)
+
+- React Native app with Expo
+- **Background photo sync** - processes photos without storing them
+- **Calendar event sync** - automatically logs calendar events to timeline
+- Automatic location and EXIF metadata extraction
+- Creates journal entries automatically from photos and calendar events
+- No photo gallery UI - just syncs metadata to build your lore
 
 ### Memory Flow
 
 1. User signs in through Supabase; session is reused for API calls.
 2. Composer can either save raw content or ask GPT to recall info. Keywords trigger automatic persistence server-side too.
-3. Entries are stored with `date, content, tags, chapter_id, mood, summary, source, metadata` schema.
-4. Timeline endpoint groups entries per month; summary endpoint leverages GPT to condense a date range.
-5. Node cron hook (`registerSyncJob`) is ready for future nightly summarization or webhook ingests.
+3. **Calendar events** are synced from iPhone and automatically create journal entries with location, attendees, and context.
+4. **Photos** are processed in the background - metadata creates journal entries without storing photos.
+5. Entries are stored with `date, content, tags, chapter_id, mood, summary, source, metadata` schema.
+6. Timeline endpoint groups entries per month; summary endpoint leverages GPT to condense a date range.
+7. Node cron hook (`registerSyncJob`) is ready for future nightly summarization or webhook ingests.
 
 ### Next Ideas
 

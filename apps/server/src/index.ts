@@ -4,9 +4,11 @@ import helmet from 'helmet';
 
 import { assertConfig, config } from './config';
 import { logger } from './logger';
+import { calendarRouter } from './routes/calendar';
 import { chatRouter } from './routes/chat';
 import { registerSyncJob } from './jobs/syncJob';
 import { entriesRouter } from './routes/entries';
+import { photosRouter } from './routes/photos';
 import { summaryRouter } from './routes/summary';
 import { timelineRouter } from './routes/timeline';
 
@@ -28,6 +30,8 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/api/entries', entriesRouter);
+app.use('/api/photos', photosRouter);
+app.use('/api/calendar', calendarRouter);
 app.use('/api/chat', chatRouter);
 app.use('/api/timeline', timelineRouter);
 app.use('/api/summary', summaryRouter);
