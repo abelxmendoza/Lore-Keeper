@@ -16,6 +16,7 @@ import { correctionsRouter } from './routes/corrections';
 import { canonRouter } from './routes/canon';
 import { ladderRouter } from './routes/ladder';
 import { memoryLadderRouter } from './routes/memoryLadder';
+import { peoplePlacesRouter } from './routes/peoplePlaces';
 
 assertConfig();
 
@@ -45,6 +46,7 @@ app.use('/api/corrections', correctionsRouter);
 app.use('/api/canon', canonRouter);
 app.use('/api/ladder', ladderRouter);
 app.use('/api/memory-ladder', memoryLadderRouter);
+app.use('/api/people-places', peoplePlacesRouter);
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   logger.error({ err }, 'Unhandled error');
