@@ -10,6 +10,8 @@ from .season_engine.season_engine import SeasonEngine
 from .monthly_arc.monthly_engine import MonthlyArcEngine
 from .book.book_engine import BookEngine
 from .identity.identity_engine import IdentityEngine
+from .memory_fabric import MemoryFabric, FabricNode, FabricEdge
+from .agents import FabricAgent, BaseAgent
 
 __all__ = [
     "TimelineManager",
@@ -25,4 +27,9 @@ __all__ = [
     "MonthlyArcEngine",
     "BookEngine",
     "IdentityEngine",
+    "MemoryFabric",
+    "FabricNode",
+    "FabricEdge",
+    "FabricAgent",
+    "BaseAgent",
 ]
