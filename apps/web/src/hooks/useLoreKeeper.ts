@@ -59,6 +59,13 @@ const fetchJson = async <T>(input: RequestInfo, init?: RequestInit): Promise<T> 
     },
     ...init
   });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.error ?? 'Request failed');
+  }
+  return res.json();
+};
+
 export type ChapterFacet = { label: string; score: number };
 
 export type ChapterProfile = Chapter & {
@@ -82,11 +89,6 @@ export type ChapterCandidate = {
   confidence: number;
 };
 
-export type TimelineResponse = {
-  chapters: (Chapter & { months: TimelineGroup[] })[];
-  unassigned: TimelineGroup[];
-};
-
 export const useLoreKeeper = () => {
   const [entries, setEntries] = useState<JournalEntry[]>(() => {
     if (typeof window === 'undefined') return [];
@@ -99,7 +101,6 @@ export const useLoreKeeper = () => {
     }
   });
   const [timeline, setTimeline] = useState<TimelineResponse>({ chapters: [], unassigned: [] });
-  const [chapters, setChapters] = useState<Chapter[]>([]);
   const [chapters, setChapters] = useState<ChapterProfile[]>([]);
   const [chapterCandidates, setChapterCandidates] = useState<ChapterCandidate[]>([]);
   const [tags, setTags] = useState<{ name: string; count: number }[]>([]);
@@ -138,16 +139,14 @@ export const useLoreKeeper = () => {
   }, []);
 
   const refreshChapters = useCallback(async () => {
-    const data = await fetchJson<{ chapters: Chapter[] }>('/api/chapters');
+    const data = await fetchJson<{ chapters: ChapterProfile[]; candidates?: ChapterCandidate[] }>('/api/chapters');
     setChapters(data.chapters);
+    setChapterCandidates(data.candidates ?? []);
   }, []);
 
   const refreshEvolution = useCallback(async () => {
     const data = await fetchJson<{ insights: EvolutionInsights }>('/api/evolution');
     setEvolution(data.insights);
-    const data = await fetchJson<{ chapters: ChapterProfile[]; candidates?: ChapterCandidate[] }>('/api/chapters');
-    setChapters(data.chapters);
-    setChapterCandidates(data.candidates ?? []);
   }, []);
 
   const createEntry = useCallback(async (content: string, overrides?: Partial<JournalEntry>) => {
@@ -236,10 +235,6 @@ export const useLoreKeeper = () => {
         method: 'POST',
         body: JSON.stringify(payload)
       });
-      setChapters((prev) => [data.chapter, ...prev]);
-      return data.chapter;
-    },
-    []
       setChapters((prev) => [hydrateChapter(data.chapter), ...prev]);
       return data.chapter;
     },
@@ -259,7 +254,6 @@ export const useLoreKeeper = () => {
     refreshChapters();
     refreshEvolution();
   }, [refreshEntries, refreshTimeline, refreshChapters, refreshEvolution]);
-  }, [refreshEntries, refreshTimeline, refreshChapters]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -285,8 +279,6 @@ export const useLoreKeeper = () => {
     reflection,
     evolution,
     chapterCandidates,
-    answer,
-    reflection,
     searchResults,
     askLoreKeeper,
     createEntry,

@@ -20,7 +20,6 @@ import { memoryGraphRouter } from './routes/memoryGraph';
 import { memoryLadderRouter } from './routes/memoryLadder';
 import { peoplePlacesRouter } from './routes/peoplePlaces';
 import { locationsRouter } from './routes/locations';
-import { memoryGraphRouter } from './routes/memoryGraph';
 
 assertConfig();
 
@@ -54,15 +53,27 @@ app.use('/api/memory-graph', memoryGraphRouter);
 app.use('/api/memory-ladder', memoryLadderRouter);
 app.use('/api/people-places', peoplePlacesRouter);
 app.use('/api/locations', locationsRouter);
-app.use('/api/memory-graph', memoryGraphRouter);
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   logger.error({ err }, 'Unhandled error');
   res.status(500).json({ error: 'Unexpected error' });
 });
 
-registerSyncJob();
+try {
+  registerSyncJob();
+} catch (error) {
+  logger.warn({ error }, 'Failed to register sync job, continuing anyway');
+}
 
-app.listen(config.port, () => {
+const server = app.listen(config.port, () => {
   logger.info(`Lore Keeper API listening on ${config.port}`);
+});
+
+server.on('error', (error: NodeJS.ErrnoException) => {
+  if (error.code === 'EADDRINUSE') {
+    logger.error(`Port ${config.port} is already in use. Please stop the other process or change the port.`);
+  } else {
+    logger.error({ error }, 'Failed to start server');
+  }
+  process.exit(1);
 });

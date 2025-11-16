@@ -20,7 +20,6 @@ const entrySchema = z.object({
   mood: z.string().nullable().optional(),
   summary: z.string().nullable().optional(),
   source: z.enum(['chat', 'manual', 'api', 'system', 'photo', 'calendar']).optional(),
-  metadata: z.record(z.any()).optional()
   metadata: z.record(z.any()).optional(),
   relationships: z
     .array(
@@ -64,7 +63,6 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res) => {
     userId: req.user!.id,
     ...parsed.data,
     tags: parsed.data.tags ?? extractTags(parsed.data.content),
-    metadata: parsed.data.metadata
     metadata: parsed.data.metadata,
     relationships: parsed.data.relationships
   });

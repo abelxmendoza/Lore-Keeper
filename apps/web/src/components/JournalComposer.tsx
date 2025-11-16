@@ -16,7 +16,6 @@ export type JournalComposerProps = {
 
 const toBase64 = (buffer: ArrayBuffer) =>
   btoa(String.fromCharCode(...Array.from(new Uint8Array(buffer))));
-const toBase64 = (buffer: ArrayBuffer) => btoa(String.fromCharCode(...Array.from(new Uint8Array(buffer))));
 
 const encryptText = async (content: string, passphrase: string) => {
   const encoder = new TextEncoder();
@@ -44,16 +43,26 @@ export const JournalComposer = ({ onSave, onAsk, onVoiceUpload, loading, chapter
       metadata = { encrypted: true, iv: encrypted.iv, algorithm: 'AES-GCM' };
     }
 
-    await onSave(content, { chapterId, metadata });
-    setValue('');
-    setChapterId(null);
-    setEncrypt(false);
-    setPassphrase('');
+    try {
+      await onSave(content, { chapterId, metadata });
+      setValue('');
+      setChapterId(null);
+      setEncrypt(false);
+      setPassphrase('');
+    } catch (error) {
+      console.error('Failed to save entry:', error);
+      alert(error instanceof Error ? error.message : 'Failed to save entry. Check console for details.');
+    }
   };
 
   const handleAsk = async () => {
     if (!value.trim()) return;
-    await onAsk(value.trim());
+    try {
+      await onAsk(value.trim());
+    } catch (error) {
+      console.error('Failed to ask Lore Keeper:', error);
+      alert(error instanceof Error ? error.message : 'Failed to ask Lore Keeper. Check console for details.');
+    }
   };
 
   const handleVoiceUpload = async (event: ChangeEvent<HTMLInputElement>) => {

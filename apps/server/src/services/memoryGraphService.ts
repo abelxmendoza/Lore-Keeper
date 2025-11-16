@@ -1,8 +1,6 @@
 import { differenceInDays, differenceInMonths, parseISO } from 'date-fns';
 import crypto from 'node:crypto';
 
-import { differenceInDays, parseISO } from 'date-fns';
-
 import type {
   MemoryGraph,
   MemoryGraphEdge,
@@ -337,11 +335,8 @@ class MemoryGraphService {
       edges: Array.from(edges.values()),
       generatedAt: new Date().toISOString()
     } satisfies MemoryGraph;
-  MemoryGraphNode,
-  MemoryGraphNodeType,
-  ResolvedMemoryEntry
-} from '../types';
-import { memoryService } from './memoryService';
+  }
+}
 
 const POSITIVE_WORDS = [
   'excited',
@@ -624,17 +619,6 @@ class MemoryGraphBuilder {
     const normalized = tokens.length ? score / Math.sqrt(tokens.length) : 0;
 
     return { score: Math.max(-1, Math.min(1, normalized)) };
-  }
-}
-
-class MemoryGraphService {
-  async buildGraph(userId: string): Promise<MemoryGraph> {
-    const entries = await memoryService.searchEntriesWithCorrections(userId, { limit: 250 });
-    const builder = new MemoryGraphBuilder();
-
-    entries.forEach((entry) => builder.ingest(entry));
-
-    return builder.toGraph();
   }
 }
 

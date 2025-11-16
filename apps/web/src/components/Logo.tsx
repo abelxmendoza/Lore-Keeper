@@ -16,17 +16,17 @@ const sizeClasses = {
 export const Logo = ({ className, size = 'md', showText = true }: LogoProps) => {
   return (
     <div className={cn('flex items-center gap-4', className)}>
-      <div className="relative">
+      <div className="relative inline-block">
         <img 
           src="/images/loreKeeperlogo3.png" 
           alt="Lore Keeper Logo" 
           className={cn(
-            'flex-shrink-0 object-contain drop-shadow-[0_0_15px_rgba(124,58,237,0.5)]',
+            'relative z-10 flex-shrink-0 object-contain drop-shadow-[0_0_15px_rgba(124,58,237,0.5)]',
             sizeClasses[size]
           )}
         />
         {/* Subtle glow effect */}
-        <div className="absolute inset-0 bg-primary/20 blur-xl -z-10" />
+        <div className="absolute inset-0 bg-primary/20 blur-xl -z-0" style={{ transform: 'scale(1.2)' }} />
       </div>
       {showText && (
         <div className="flex flex-col">

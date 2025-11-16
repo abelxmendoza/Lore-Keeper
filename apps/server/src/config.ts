@@ -23,7 +23,6 @@ export const config: EnvConfig = {
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
   defaultModel: process.env.OPENAI_API_MODEL ?? process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
   embeddingModel: process.env.OPENAI_EMBEDDING_MODEL ?? 'text-embedding-3-small'
-  defaultModel: process.env.OPENAI_API_MODEL ?? process.env.OPENAI_MODEL ?? 'gpt-4o-mini'
 };
 
 export const assertConfig = () => {
@@ -34,8 +33,26 @@ export const assertConfig = () => {
     'supabaseServiceRoleKey'
   ];
 
-  const missing = required.filter((key) => !config[key]);
+  const missing = required.filter((key) => {
+    const value = config[key];
+    // Check for placeholder values
+    if (typeof value === 'string') {
+      return !value || 
+             value === 'service-role-key' || 
+             value === 'sk-xxx' || 
+             value.startsWith('your-') ||
+             value.includes('placeholder');
+    }
+    return !value;
+  });
+  
   if (missing.length) {
-    throw new Error(`Missing env vars: ${missing.join(', ')}`);
+    console.error(`\n⚠️  Missing or placeholder environment variables: ${missing.join(', ')}`);
+    console.error('⚠️  Backend will start but authentication and API features will not work.');
+    console.error('\n📝 To fix:');
+    console.error('   1. Get your Supabase Service Role Key from: https://supabase.com/dashboard/project/jawzxiiwfagliloxnnkc/settings/api');
+    console.error('   2. Get your OpenAI API Key from: https://platform.openai.com/api-keys');
+    console.error('   3. Update your .env file with the real values\n');
+    // Don't throw - allow server to start for development
   }
 };

@@ -195,6 +195,8 @@ export type MemoryGraph = {
   edges: MemoryGraphEdge[];
   generatedAt: string;
   entryCount: number;
+};
+
 export type EvolutionInsights = {
   personaTitle: string;
   personaTraits: string[];
@@ -208,6 +210,8 @@ export type EvolutionInsights = {
   echoes: Array<{ title: string; referenceDate: string; quote?: string }>;
   reminders: string[];
   nextEra: string;
+};
+
 export type PeoplePlaceEntity = {
   id: string;
   user_id: string;
@@ -254,6 +258,8 @@ export type LocationProfile = {
   moods: { mood: string; count: number }[];
   entries: LocationVisit[];
   sources: string[];
+};
+
 export type MemoryGraphNodeType = 'event' | 'person' | 'place' | 'tag' | 'theme' | 'chapter';
 
 export type MemoryGraphEdgeType =

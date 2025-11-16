@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { CalendarRange, Search, Wand2 } from 'lucide-react';
 import { CalendarRange, PenLine, PlusCircle, Search, Wand2 } from 'lucide-react';
 
 import { AuthGate } from '../components/AuthGate';
@@ -55,7 +54,6 @@ const AppContent = () => {
     uploadVoiceEntry,
     evolution,
     refreshEvolution
-    uploadVoiceEntry
   } = useLoreKeeper();
   const [summary, setSummary] = useState('');
   const [rangeLabel, setRangeLabel] = useState(formatRange().label);
@@ -67,12 +65,20 @@ const AppContent = () => {
   const [persona, setPersona] = useState('The Archivist');
   const [reflecting, setReflecting] = useState(false);
   const [activeTab, setActiveTab] = useState<'log' | 'timeline'>('log');
+  const [generatingSummary, setGeneratingSummary] = useState(false);
 
   const handleSummary = async () => {
-    const range = formatRange();
-    const data = await summarize(range.from, range.to);
-    setSummary(data.summary);
-    setRangeLabel(range.label);
+    setGeneratingSummary(true);
+    try {
+      const range = formatRange();
+      const data = await summarize(range.from, range.to);
+      setSummary(data.summary);
+      setRangeLabel(range.label);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to generate summary');
+    } finally {
+      setGeneratingSummary(false);
+    }
   };
 
   const scrollToComposer = () => {
@@ -99,7 +105,12 @@ const AppContent = () => {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-black via-purple-950 to-black">
-      <Sidebar />
+      <Sidebar 
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onCreateChapter={() => setChapterModalOpen(true)}
+        onScrollToComposer={scrollToComposer}
+      />
       <main className="flex-1 space-y-6 p-6 text-white">
         <header className="rounded-2xl border border-border/60 bg-opacity-70 bg-[radial-gradient(circle_at_top,_rgba(126,34,206,0.35),_transparent)] p-6 shadow-panel">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -133,12 +144,22 @@ const AppContent = () => {
               loading={loading}
               chapters={chapters}
               onSave={async (content, options) => {
-                await createEntry(content, { chapter_id: options?.chapterId ?? null, metadata: options?.metadata });
-                await Promise.all([refreshEntries(), refreshTimeline()]);
+                try {
+                  await createEntry(content, { chapter_id: options?.chapterId ?? null, metadata: options?.metadata });
+                  await Promise.all([refreshEntries(), refreshTimeline()]);
+                } catch (error) {
+                  console.error('Failed to create entry:', error);
+                  throw error;
+                }
               }}
               onAsk={async (content) => {
-                setLastPrompt(content);
-                await askLoreKeeper(content, persona);
+                try {
+                  setLastPrompt(content);
+                  await askLoreKeeper(content, persona);
+                } catch (error) {
+                  console.error('Failed to ask Lore Keeper:', error);
+                  throw error;
+                }
               }}
               onVoiceUpload={async (file) => {
                 await uploadVoiceEntry(file);
@@ -178,6 +199,11 @@ const AppContent = () => {
               )}
             </div>
             <EntryList entries={(searchResults.length ? searchResults : entries).slice(0, 8)} />
+          </div>
+          <div className="space-y-6">
+            <TimelinePanel timeline={timeline} />
+          </div>
+        </div>
         <div className="flex flex-wrap items-center gap-3">
           <Button variant={activeTab === 'log' ? 'default' : 'outline'} onClick={() => setActiveTab('log')} size="sm">
             Memory Log
@@ -194,12 +220,22 @@ const AppContent = () => {
                   loading={loading}
                   chapters={chapters}
                   onSave={async (content, options) => {
-                    await createEntry(content, { chapter_id: options?.chapterId ?? null, metadata: options?.metadata });
-                    await Promise.all([refreshEntries(), refreshTimeline()]);
+                    try {
+                      await createEntry(content, { chapter_id: options?.chapterId ?? null, metadata: options?.metadata });
+                      await Promise.all([refreshEntries(), refreshTimeline()]);
+                    } catch (error) {
+                      console.error('Failed to create entry:', error);
+                      throw error;
+                    }
                   }}
                   onAsk={async (content) => {
-                    setLastPrompt(content);
-                    await askLoreKeeper(content, persona);
+                    try {
+                      setLastPrompt(content);
+                      await askLoreKeeper(content, persona);
+                    } catch (error) {
+                      console.error('Failed to ask Lore Keeper:', error);
+                      throw error;
+                    }
                   }}
                   onVoiceUpload={async (file) => {
                     await uploadVoiceEntry(file);
@@ -282,35 +318,15 @@ const AppContent = () => {
                 <div>
                   <p className="text-xs uppercase text-white/50">Tag Cloud</p>
                   <h3 className="text-lg font-semibold">Topics</h3>
-            <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-              <MemoryTimeline />
-              <div className="space-y-6">
-                <TimelinePanel timeline={timeline} />
-                <ChaptersList
-                  timeline={timeline}
-                  onCreateClick={() => setChapterModalOpen(true)}
-                  onSummarize={async (chapterId) => {
-                    const summaryText = await summarizeChapter(chapterId);
-                    setChapterSummary(summaryText);
-                    await Promise.all([refreshTimeline(), refreshChapters()]);
-                  }}
-                />
-                <div className="rounded-2xl border border-border/60 bg-black/40 p-6 shadow-panel">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs uppercase text-white/50">Tag Cloud</p>
-                      <h3 className="text-lg font-semibold">Topics</h3>
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <TagCloud tags={tags} />
-                  </div>
                 </div>
+              </div>
+              <div className="mt-4">
+                <TagCloud tags={tags} />
               </div>
             </div>
           </div>
-        </div>
-        <div className="grid gap-6 xl:grid-cols-3">
+        )}
+        <div className="grid gap-6 xl:grid-cols-3" data-chat-panel>
           <div className="xl:col-span-2">
             <ChatPanel
               answer={answer}
@@ -330,110 +346,24 @@ const AppContent = () => {
                   <h3 className="text-lg font-semibold">Weekly Debrief</h3>
                   <p className="text-xs text-white/40">{rangeLabel}</p>
                 </div>
-                <Button size="sm" variant="ghost" leftIcon={<CalendarRange className="h-4 w-4" />} onClick={handleSummary}>
-                  Generate
-                </Button>
-        <ChapterViewer chapters={chapters} candidates={chapterCandidates} onRefresh={refreshChapters} />
-        )}
-        <div className="grid gap-6 lg:grid-cols-2">
-          <ChatPanel
-            answer={answer}
-            loading={loading}
-            persona={persona}
-            onPersonaChange={setPersona}
-            onRefresh={() => {
-              if (lastPrompt) askLoreKeeper(lastPrompt, persona);
-            }}
-          />
-          <div className="rounded-2xl border border-border/60 bg-black/40 p-6 shadow-panel">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase text-white/50">Summaries</p>
-                <h3 className="text-lg font-semibold">Weekly Debrief</h3>
-                <p className="text-xs text-white/40">{rangeLabel}</p>
-              </div>
-              <p className="mt-4 text-sm text-white/80">
-                {summary || 'Generate a summary to see your latest milestones compacted into lore.'}
-              </p>
-              <div className="mt-4 flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase text-white/50">Reflect Mode</p>
-                  <p className="text-xs text-white/40">Ask for advice on this month.</p>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  leftIcon={<Wand2 className="h-4 w-4" />}
-                  disabled={reflecting}
-                  onClick={async () => {
-                    const now = new Date();
-                    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-                    setReflecting(true);
-                    try {
-                      await reflect({ mode: 'month', month: monthKey, persona });
-                    } finally {
-                      setReflecting(false);
-                    }
-                  }}
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  leftIcon={<CalendarRange className="h-4 w-4" />} 
+                  onClick={handleSummary}
+                  disabled={generatingSummary || loading}
                 >
-                  {reflecting ? 'Reflecting…' : 'Reflect'}
+                  {generatingSummary ? 'Generating...' : 'Generate'}
                 </Button>
               </div>
-              {reflection && (
-                <div className="mt-3 rounded-xl border border-primary/30 bg-primary/10 p-3 text-sm text-white/80">
-                  <p className="text-xs uppercase text-primary/70">Insight</p>
-                  <p className="mt-2 whitespace-pre-line">{reflection}</p>
-                </div>
-              )}
-              {chapterSummary && (
-                <div className="mt-4 rounded-xl border border-primary/30 bg-primary/10 p-3 text-sm text-white/80">
-                  <p className="text-xs uppercase text-primary/70">Chapter Summary</p>
-                  <p className="mt-2">{chapterSummary}</p>
+              {summary && (
+                <div className="mt-4 rounded-xl border border-primary/30 bg-primary/10 p-4 text-sm text-white/80">
+                  <p className="text-xs uppercase text-primary/70 mb-2">Summary</p>
+                  <p className="whitespace-pre-line">{summary}</p>
                 </div>
               )}
             </div>
-            <EvolutionPanel insights={evolution} loading={loading} onRefresh={refreshEvolution} />
-          </div>
-        </div>
-            <p className="mt-4 text-sm text-white/80">
-              {summary || 'Generate a summary to see your latest milestones compacted into lore.'}
-            </p>
-            <div className="mt-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase text-white/50">Reflect Mode</p>
-                <p className="text-xs text-white/40">Ask for advice on this month.</p>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                leftIcon={<Wand2 className="h-4 w-4" />}
-                disabled={reflecting}
-                onClick={async () => {
-                  const now = new Date();
-                  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-                  setReflecting(true);
-                  try {
-                    await reflect({ mode: 'month', month: monthKey, persona });
-                  } finally {
-                    setReflecting(false);
-                  }
-                }}
-              >
-                {reflecting ? 'Reflecting…' : 'Reflect'}
-              </Button>
-            </div>
-            {reflection && (
-              <div className="mt-3 rounded-xl border border-primary/30 bg-primary/10 p-3 text-sm text-white/80">
-                <p className="text-xs uppercase text-primary/70">Insight</p>
-                <p className="mt-2 whitespace-pre-line">{reflection}</p>
-              </div>
-            )}
-            {chapterSummary && (
-              <div className="mt-4 rounded-xl border border-primary/30 bg-primary/10 p-3 text-sm text-white/80">
-                <p className="text-xs uppercase text-primary/70">Chapter Summary</p>
-                <p className="mt-2">{chapterSummary}</p>
-              </div>
-            )}
+            <ChapterViewer chapters={chapters} candidates={chapterCandidates} onRefresh={refreshChapters} />
           </div>
         </div>
         <div className="fixed bottom-6 right-6 z-30 flex flex-col gap-2">
