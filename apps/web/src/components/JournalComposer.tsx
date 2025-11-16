@@ -8,6 +8,7 @@ import { Textarea } from './ui/textarea';
 
 export type JournalComposerProps = {
   onSave: (content: string, options?: { chapterId?: string | null; metadata?: Record<string, unknown> }) => Promise<void>;
+  onSave: (content: string, options?: { chapterId?: string | null }) => Promise<void>;
   onAsk: (content: string) => Promise<void>;
   onVoiceUpload?: (file: File) => Promise<void>;
   loading?: boolean;
@@ -44,6 +45,13 @@ export const JournalComposer = ({ onSave, onAsk, onVoiceUpload, loading, chapter
     }
 
     await onSave(content, { chapterId, metadata });
+export const JournalComposer = ({ onSave, onAsk, loading, chapters = [] }: JournalComposerProps) => {
+  const [value, setValue] = useState('');
+  const [chapterId, setChapterId] = useState<string | null>(null);
+
+  const handleSave = async () => {
+    if (!value.trim()) return;
+    await onSave(value.trim(), { chapterId });
     setValue('');
     setChapterId(null);
   };

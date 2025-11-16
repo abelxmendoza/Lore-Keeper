@@ -47,6 +47,7 @@ const AppContent = () => {
     reflect,
     reflection,
     uploadVoiceEntry
+    timelineCount
   } = useLoreKeeper();
   const [summary, setSummary] = useState('');
   const [rangeLabel, setRangeLabel] = useState(formatRange().label);
@@ -102,6 +103,7 @@ const AppContent = () => {
               chapters={chapters}
               onSave={async (content, options) => {
                 await createEntry(content, { chapter_id: options?.chapterId ?? null, metadata: options?.metadata });
+                await createEntry(content, { chapter_id: options?.chapterId ?? null });
                 await Promise.all([refreshEntries(), refreshTimeline()]);
               }}
               onAsk={async (content) => {
