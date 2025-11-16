@@ -31,6 +31,10 @@ Timeline → IdentityEngine → OmegaPersonaEngine → Persona Rules → API/Cha
             SeasonEngine      Daily/Weekly Briefings
 ```
 
+## Hypergraph Quantum Index (HQI)
+
+HQI is the unified search engine for Lore Keeper. It blends vectors, graph edges, timeline data, tags, characters, and motifs into a single ranking function. This enables deep life querying, fast recall, and context-rich retrieval.
+
 ## Getting Started
 
 ```bash
