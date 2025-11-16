@@ -1,3 +1,5 @@
+// © 2025 Abel Mendoza — Omega Technologies. All Rights Reserved.
+
 import { useState } from 'react';
 import { CalendarRange, PenLine, PlusCircle, Search, Wand2 } from 'lucide-react';
 
@@ -19,6 +21,9 @@ import { MemoryTimeline } from '../components/MemoryTimeline';
 import { fetchJson } from '../lib/api';
 import { TaskEnginePanel } from '../components/TaskEnginePanel';
 import { useTaskEngine } from '../hooks/useTaskEngine';
+import { Header } from '../components/Header';
+import { Footer } from '../components/Footer';
+import { DeleteAccountDialog } from '../components/settings/DeleteAccountDialog';
 
 const formatRange = (days = 7) => {
   const end = new Date();
@@ -115,15 +120,26 @@ const AppContent = () => {
     }
   };
 
+  const handleUpgrade = () => {
+    window.location.href = '/upgrade';
+  };
+
+  const handleDeleteAccount = async () => {
+    await fetch('/api/account/delete', { method: 'POST' });
+    alert('Account deletion requested. Your session will be cleared.');
+  };
+
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-black via-purple-950 to-black">
-      <Sidebar 
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        onCreateChapter={() => setChapterModalOpen(true)}
-        onScrollToComposer={scrollToComposer}
-      />
-      <main className="flex-1 space-y-6 p-6 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-black via-purple-950 to-black text-white">
+      <Header onUpgrade={handleUpgrade} />
+      <div className="flex min-h-[calc(100vh-64px)]">
+        <Sidebar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          onCreateChapter={() => setChapterModalOpen(true)}
+          onScrollToComposer={scrollToComposer}
+        />
+        <main className="flex-1 space-y-6 p-6">
         <header className="rounded-2xl border border-border/60 bg-opacity-70 bg-[radial-gradient(circle_at_top,_rgba(126,34,206,0.35),_transparent)] p-6 shadow-panel">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -398,6 +414,20 @@ const AppContent = () => {
             <ChapterViewer chapters={chapters} candidates={chapterCandidates} onRefresh={refreshChapters} />
           </div>
         </div>
+        <div className="rounded-2xl border border-border/60 bg-black/40 p-6 shadow-panel">
+          <div className="flex items-center justify-between">
+            <div>
+              <div id="ownership" className="sr-only">Ownership</div>
+              <p className="text-xs uppercase text-white/50">Account</p>
+              <h3 className="text-lg font-semibold">Ownership & Safety</h3>
+              <p className="text-xs text-white/60">Export or irreversibly delete your LoreKeeper data.</p>
+            </div>
+            <DeleteAccountDialog onConfirm={handleDeleteAccount} />
+          </div>
+          <p className="mt-3 text-xs text-white/60">
+            Need a copy first? <a className="underline" href="/api/account/export">Download your JSON export.</a>
+          </p>
+        </div>
         <div className="fixed bottom-6 right-6 z-30 flex flex-col gap-2">
           <Button size="lg" leftIcon={<PlusCircle className="h-4 w-4" />} onClick={scrollToComposer}>
             + New Entry
@@ -417,7 +447,9 @@ const AppContent = () => {
         />
       </main>
     </div>
-  );
+    <Footer />
+  </div>
+);
 };
 
 const App = () => (

@@ -1,3 +1,5 @@
+// © 2025 Abel Mendoza — Omega Technologies. All Rights Reserved.
+
 <div align="center">
   <img src="apps/web/public/images/loreKeeperlogo3.png" alt="Lore Keeper Logo" width="300" />
 </div>
@@ -119,6 +121,20 @@ create index if not exists task_memory_bridges_user_idx on public.task_memory_br
 create index if not exists task_memory_bridges_task_idx on public.task_memory_bridges(task_id);
 create index if not exists task_memory_bridges_timeline_idx on public.task_memory_bridges(timeline_event_id);
 ```
+
+## API Endpoints
+
+- `GET /api/legal/terms` – Terms of Service markdown
+- `GET /api/legal/privacy` – Privacy Policy markdown
+- `GET /api/account/export` – Export account data as JSON gzip archive
+- `POST /api/account/delete` – Irreversible account deletion
+- `POST /api/billing/create-checkout-session` – Stripe checkout for upgrades
+- `POST /api/billing/portal` – Manage billing portal access
+- `POST /api/billing/webhook` – Billing webhook receiver
+
+## Ownership & Rights
+This project, LoreKeeper, including all code, documentation, and concepts, is © 2025 Abel Mendoza (Omega Technologies).
+All rights reserved. No part of this software may be used commercially, redistributed, or sold without explicit permission.
 
 ### Character Knowledge Base (Entity-Relationship Schema)
 

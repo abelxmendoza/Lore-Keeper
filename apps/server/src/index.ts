@@ -22,6 +22,9 @@ import { peoplePlacesRouter } from './routes/peoplePlaces';
 import { locationsRouter } from './routes/locations';
 import { xRouter } from './routes/x';
 import { tasksRouter } from './routes/tasks';
+import { legalRouter } from './routes/legal';
+import { billingRouter } from './billing/billingRouter';
+import { accountRouter } from './routes/account';
 
 assertConfig();
 
@@ -57,6 +60,9 @@ app.use('/api/people-places', peoplePlacesRouter);
 app.use('/api/locations', locationsRouter);
 app.use('/api/x', xRouter);
 app.use('/api/tasks', tasksRouter);
+app.use('/api/legal', legalRouter);
+app.use('/api/billing', billingRouter);
+app.use('/api/account', accountRouter);
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   logger.error({ err }, 'Unhandled error');
