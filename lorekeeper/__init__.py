@@ -18,6 +18,14 @@ from .autopilot_types import (
     TransitionGuidance,
     RiskAlert,
     MomentumSignal,
+from .insight_engine import InsightEngine
+from .insights_types import (
+    PatternInsight,
+    CorrelationInsight,
+    CyclicBehaviorInsight,
+    IdentityShiftInsight,
+    MotifInsight,
+    PredictionInsight,
 )
 
 __all__ = [
@@ -41,4 +49,11 @@ __all__ = [
     "TransitionGuidance",
     "RiskAlert",
     "MomentumSignal",
+    "InsightEngine",
+    "PatternInsight",
+    "CorrelationInsight",
+    "CyclicBehaviorInsight",
+    "IdentityShiftInsight",
+    "MotifInsight",
+    "PredictionInsight",
 ]
