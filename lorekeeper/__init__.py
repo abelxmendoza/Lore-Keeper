@@ -11,6 +11,25 @@ from .monthly_arc.monthly_engine import MonthlyArcEngine
 from .book.book_engine import BookEngine
 from .identity.identity_engine import IdentityEngine
 from .hqi_engine import HQIEngine, HQIResult, MemoryEdge, MemoryFabric, MemoryNode
+from .memory_fabric import MemoryFabric, FabricNode, FabricEdge
+from .agents import FabricAgent, BaseAgent
+from .autopilot_engine import AutopilotEngine
+from .autopilot_types import (
+    DailyRecommendation,
+    WeeklyStrategy,
+    MonthlyCorrection,
+    TransitionGuidance,
+    RiskAlert,
+    MomentumSignal,
+from .insight_engine import InsightEngine
+from .insights_types import (
+    PatternInsight,
+    CorrelationInsight,
+    CyclicBehaviorInsight,
+    IdentityShiftInsight,
+    MotifInsight,
+    PredictionInsight,
+)
 
 __all__ = [
     "TimelineManager",
@@ -31,4 +50,23 @@ __all__ = [
     "MemoryFabric",
     "MemoryEdge",
     "MemoryNode",
+    "MemoryFabric",
+    "FabricNode",
+    "FabricEdge",
+    "FabricAgent",
+    "BaseAgent",
+    "AutopilotEngine",
+    "DailyRecommendation",
+    "WeeklyStrategy",
+    "MonthlyCorrection",
+    "TransitionGuidance",
+    "RiskAlert",
+    "MomentumSignal",
+    "InsightEngine",
+    "PatternInsight",
+    "CorrelationInsight",
+    "CyclicBehaviorInsight",
+    "IdentityShiftInsight",
+    "MotifInsight",
+    "PredictionInsight",
 ]
