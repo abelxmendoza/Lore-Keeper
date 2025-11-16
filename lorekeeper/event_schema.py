@@ -1,7 +1,7 @@
 """Schema definitions for LoreKeeper timeline events."""
 from dataclasses import dataclass, field
 import uuid
-from typing import List
+from typing import List, Dict, Any
 
 
 @dataclass(frozen=True)
@@ -16,3 +16,4 @@ class TimelineEvent:
     tags: List[str] = field(default_factory=list)
     source: str = ""
     archived: bool = False
+    metadata: Dict[str, Any] = field(default_factory=dict)
