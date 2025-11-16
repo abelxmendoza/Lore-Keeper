@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict
-from datetime import datetime
+from datetime import datetime, timedelta, date
 from pathlib import Path
 from typing import Iterable, List, Optional
 
@@ -80,6 +80,36 @@ class TimelineManager:
             return True
 
         return [event for event in candidates if in_range(event)]
+
+    def _resolve_period_range(self, period: str, reference_date: Optional[date] = None) -> tuple[str, str]:
+        """Translate a named period into an ISO date range inclusive of the reference date."""
+
+        today = reference_date or datetime.utcnow().date()
+
+        if period == "last_7_days":
+            start = today - timedelta(days=6)
+        elif period == "last_30_days":
+            start = today - timedelta(days=29)
+        elif period == "last_3_months":
+            start = today - timedelta(days=90)
+        elif period == "this_year":
+            start = date(year=today.year, month=1, day=1)
+        else:
+            raise ValueError(f"Unsupported period: {period}")
+
+        return start.isoformat(), today.isoformat()
+
+    def get_events_by_period(
+        self,
+        period: str,
+        tags: Optional[List[str]] = None,
+        include_archived: bool = False,
+        reference_date: Optional[date] = None,
+    ) -> List[TimelineEvent]:
+        """Convenience wrapper to fetch events for a named context window."""
+
+        start_date, end_date = self._resolve_period_range(period, reference_date=reference_date)
+        return self.get_events(start_date=start_date, end_date=end_date, tags=tags, include_archived=include_archived)
 
     def archive_event(self, event_id: str) -> Optional[TimelineEvent]:
         """Mark an event as archived while keeping it in the shard."""

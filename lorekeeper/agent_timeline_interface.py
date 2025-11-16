@@ -25,6 +25,13 @@ class TimelineAgentInterface:
         trimmed = sorted_events[: self.max_context_events]
         return [asdict(event) for event in trimmed]
 
+    def query_context_window(self, period: str, tags: Optional[List[str]] = None) -> List[dict]:
+        """Convenience helper to fetch events for common context windows."""
+
+        events = self.manager.get_events_by_period(period, tags=tags, include_archived=False)
+        sorted_events = sorted(events, key=lambda e: e.date, reverse=True)
+        return [asdict(event) for event in sorted_events]
+
     def add_event_from_text(
         self,
         text: str,

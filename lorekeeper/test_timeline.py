@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
@@ -10,6 +10,9 @@ import unittest
 from .agent_timeline_interface import TimelineAgentInterface
 from .event_schema import TimelineEvent
 from .timeline_manager import TimelineManager
+from .narrative_stitcher import NarrativeStitcher
+from .voice_memo_ingestion import VoiceMemoIngestor, VoiceMemo
+from .drift_auditor import DriftAuditor
 
 
 class TimelineManagerTests(unittest.TestCase):
@@ -87,6 +90,59 @@ class TimelineManagerTests(unittest.TestCase):
         context = agent.load_timeline_context()
         self.assertEqual(len(context), 3)
         self.assertEqual(context[0]["title"], "Entry 4")
+
+    def test_context_windows(self) -> None:
+        agent = TimelineAgentInterface(base_path=self.base_path, max_context_events=10)
+        reference = date(2025, 2, 7)
+        recent_events = [
+            TimelineEvent(date="2025-02-07", title="Today", type="note", details="current"),
+            TimelineEvent(date="2025-02-02", title="Earlier", type="note", details="recent"),
+            TimelineEvent(date="2024-12-31", title="Last Year", type="note", details="old"),
+        ]
+        for event in recent_events:
+            agent.manager.add_event(event)
+
+        last_week = agent.manager.get_events_by_period("last_7_days", reference_date=reference)
+        self.assertEqual(len(last_week), 2)
+        last_thirty = agent.manager.get_events_by_period("last_30_days", reference_date=reference)
+        self.assertEqual(len(last_thirty), 2)
+        this_year = agent.manager.get_events_by_period("this_year", reference_date=reference)
+        self.assertEqual(len(this_year), 2)
+
+    def test_narrative_stitcher(self) -> None:
+        events = [
+            TimelineEvent(date="2025-01-01", title="Kickoff", type="project", details="Start", tags=["robotics"]),
+            TimelineEvent(date="2025-01-05", title="Sensor", type="project", details="Sensors", tags=["robotics"]),
+            TimelineEvent(date="2025-01-10", title="Tournament", type="training", details="BJJ", tags=["bjj"]),
+        ]
+        stitcher = NarrativeStitcher(max_sections=2)
+        story = stitcher.stitch(events)
+        self.assertIn("robotics", story.lower())
+        self.assertIn("Stitched 3 events", story)
+
+    def test_voice_memo_ingestion(self) -> None:
+        ingestor = VoiceMemoIngestor(self.manager)
+        memo = VoiceMemo(
+            transcription="Met Felipe and trained hard.",
+            recorded_at=datetime(2025, 2, 1, 10, 0, 0),
+            device="iphone",
+            tags=["bjj", "training"],
+        )
+        event = ingestor.ingest_transcription(memo)
+        self.assertEqual(event.type, "voice_memo")
+        stored = self.manager.get_events(year=2025)
+        self.assertEqual(len(stored), 1)
+        self.assertEqual(stored[0].metadata["device"], "iphone")
+
+    def test_drift_auditor(self) -> None:
+        events = [
+            TimelineEvent(date="2025-02-01", title="Promotion", type="milestone", details="Blue belt"),
+            TimelineEvent(date="2025-02-01", title="Promotion", type="milestone", details="Purple belt"),
+        ]
+        auditor = DriftAuditor()
+        flags = auditor.audit(events)
+        self.assertEqual(len(flags), 1)
+        self.assertEqual(flags[0].issue, "Conflicting recounts")
 
 
 if __name__ == "__main__":
