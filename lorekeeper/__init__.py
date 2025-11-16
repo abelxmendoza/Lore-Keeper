@@ -10,6 +10,7 @@ from .season_engine.season_engine import SeasonEngine
 from .monthly_arc.monthly_engine import MonthlyArcEngine
 from .book.book_engine import BookEngine
 from .identity.identity_engine import IdentityEngine
+from .autopilot_engine import AutopilotEngine
 from .insight_engine import InsightEngine
 from .insights_types import (
     PatternInsight,
@@ -34,6 +35,7 @@ __all__ = [
     "MonthlyArcEngine",
     "BookEngine",
     "IdentityEngine",
+    "AutopilotEngine",
     "InsightEngine",
     "PatternInsight",
     "CorrelationInsight",
