@@ -11,6 +11,15 @@ from .monthly_arc.monthly_engine import MonthlyArcEngine
 from .book.book_engine import BookEngine
 from .identity.identity_engine import IdentityEngine
 from .autopilot_engine import AutopilotEngine
+from .insight_engine import InsightEngine
+from .insights_types import (
+    PatternInsight,
+    CorrelationInsight,
+    CyclicBehaviorInsight,
+    IdentityShiftInsight,
+    MotifInsight,
+    PredictionInsight,
+)
 
 __all__ = [
     "TimelineManager",
@@ -27,4 +36,11 @@ __all__ = [
     "BookEngine",
     "IdentityEngine",
     "AutopilotEngine",
+    "InsightEngine",
+    "PatternInsight",
+    "CorrelationInsight",
+    "CyclicBehaviorInsight",
+    "IdentityShiftInsight",
+    "MotifInsight",
+    "PredictionInsight",
 ]
