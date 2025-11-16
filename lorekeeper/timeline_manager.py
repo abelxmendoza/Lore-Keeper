@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Iterable, List, Optional
 
 from .event_schema import TimelineEvent
+from .security import secure_load_json
 
 
 class TimelineManager:
@@ -22,10 +23,7 @@ class TimelineManager:
 
     def _load_raw_year(self, year: int) -> List[dict]:
         path = self._year_file(year)
-        if not path.exists():
-            path.write_text("[]", encoding="utf-8")
-            return []
-        return json.loads(path.read_text(encoding="utf-8"))
+        return secure_load_json(path, base_dir=self.base_path)
 
     def _save_year(self, year: int, events: Iterable[dict]) -> None:
         path = self._year_file(year)
