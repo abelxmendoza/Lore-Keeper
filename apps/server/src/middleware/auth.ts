@@ -3,6 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 
 import { config } from '../config';
 
+if (!config.supabaseUrl || !config.supabaseServiceRoleKey) {
+  throw new Error('Missing Supabase configuration. Please check your .env file.');
+}
+
 const supabase = createClient(config.supabaseUrl, config.supabaseServiceRoleKey);
 
 export type AuthenticatedRequest = Request & {

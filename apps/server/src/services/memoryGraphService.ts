@@ -333,7 +333,8 @@ class MemoryGraphService {
     return {
       nodes: Array.from(nodes.values()),
       edges: Array.from(edges.values()),
-      generatedAt: new Date().toISOString()
+      generatedAt: new Date().toISOString(),
+      entryCount: entries.length
     } satisfies MemoryGraph;
   }
 }
@@ -460,7 +461,7 @@ class MemoryGraphBuilder {
     const weight = this.recency(date);
 
     if (existing) {
-      existing.weight += weight;
+      existing.weight = (existing.weight ?? 0) + weight;
       existing.lastSeen = date;
       if (sentimentScore !== undefined) {
         const samples = existing.sentiments?.samples ?? [];

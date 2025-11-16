@@ -32,18 +32,23 @@ const entrySchema = z.object({
 });
 
 router.get('/', requireAuth, async (req: AuthenticatedRequest, res) => {
-  const { tag, search, chapterId, from, to, semantic, threshold } = req.query;
-  const semanticMode = typeof semantic === 'string' ? semantic === 'true' : false;
-  const entries = await memoryService.searchEntries(req.user!.id, {
-    tag: tag as string | undefined,
-    search: search as string | undefined,
-    chapterId: chapterId as string | undefined,
-    from: from as string | undefined,
-    to: to as string | undefined,
-    semantic: semanticMode,
-    threshold: threshold ? Number(threshold) : undefined
-  });
-  res.json({ entries });
+  try {
+    const { tag, search, chapterId, from, to, semantic, threshold } = req.query;
+    const semanticMode = typeof semantic === 'string' ? semantic === 'true' : false;
+    const entries = await memoryService.searchEntries(req.user!.id, {
+      tag: tag as string | undefined,
+      search: search as string | undefined,
+      chapterId: chapterId as string | undefined,
+      from: from as string | undefined,
+      to: to as string | undefined,
+      semantic: semanticMode,
+      threshold: threshold ? Number(threshold) : undefined
+    });
+    res.json({ entries });
+  } catch (error) {
+    console.error('Error fetching entries:', error);
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to fetch entries' });
+  }
 });
 
 router.post('/', requireAuth, async (req: AuthenticatedRequest, res) => {

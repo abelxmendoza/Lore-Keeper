@@ -32,14 +32,17 @@ export const createChapter = async (req: AuthenticatedRequest, res: Response) =>
 };
 
 export const listChapters = async (req: AuthenticatedRequest, res: Response) => {
-  const chapters = await chapterService.listChapters(req.user!.id);
-  return res.json({ chapters });
-  const [chapters, candidates] = await Promise.all([
-    chapterInsightsService.buildProfiles(req.user!.id),
-    chapterInsightsService.detectCandidates(req.user!.id)
-  ]);
+  try {
+    const [chapters, candidates] = await Promise.all([
+      chapterInsightsService.buildProfiles(req.user!.id),
+      chapterInsightsService.detectCandidates(req.user!.id)
+    ]);
 
-  return res.json({ chapters, candidates });
+    return res.json({ chapters, candidates });
+  } catch (error) {
+    console.error('Error listing chapters:', error);
+    return res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to list chapters' });
+  }
 };
 
 export const getChapterEntries = async (req: AuthenticatedRequest, res: Response) => {

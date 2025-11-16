@@ -1,7 +1,6 @@
 import { Router } from 'express';
 
 import { requireAuth } from '../middleware/auth';
-import { createChapter, listChapters, summarizeChapter } from '../controllers/chaptersController';
 import {
   createChapter,
   detectChapterCandidates,

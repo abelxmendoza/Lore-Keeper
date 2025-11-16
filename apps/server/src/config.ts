@@ -3,7 +3,26 @@ import { fileURLToPath } from 'node:url';
 
 import dotenv from 'dotenv';
 
-dotenv.config({ path: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../.env') });
+// Load .env from project root
+// From apps/server/src/config.ts, we need to go up 3 levels to reach root
+const currentDir = path.dirname(fileURLToPath(import.meta.url)); // apps/server/src
+const serverDir = path.dirname(currentDir); // apps/server
+const appsDir = path.dirname(serverDir); // apps
+const rootDir = path.dirname(appsDir); // root
+const envPath = path.resolve(rootDir, '.env');
+
+const result = dotenv.config({ path: envPath });
+if (result.error) {
+  console.error(`❌ Failed to load .env from ${envPath}:`, result.error.message);
+  // Try process.cwd() as fallback
+  const fallbackPath = path.resolve(process.cwd(), '.env');
+  const fallbackResult = dotenv.config({ path: fallbackPath });
+  if (!fallbackResult.error) {
+    console.log(`✅ Loaded .env from fallback: ${fallbackPath}`);
+  }
+} else {
+  console.log(`✅ Loaded .env from: ${envPath}`);
+}
 
 type EnvConfig = {
   port: number;

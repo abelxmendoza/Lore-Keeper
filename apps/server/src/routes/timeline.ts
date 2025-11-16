@@ -9,8 +9,13 @@ const router = Router();
 router.get('/', requireAuth, getTimeline);
 
 router.get('/tags', requireAuth, async (req: AuthenticatedRequest, res) => {
-  const tags = await memoryService.listTags(req.user!.id);
-  res.json({ tags });
+  try {
+    const tags = await memoryService.listTags(req.user!.id);
+    res.json({ tags });
+  } catch (error) {
+    console.error('Error fetching tags:', error);
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to fetch tags' });
+  }
 });
 
 export const timelineRouter = router;

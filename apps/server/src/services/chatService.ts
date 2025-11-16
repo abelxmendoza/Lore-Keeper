@@ -11,7 +11,6 @@ const openai = new OpenAI({ apiKey: config.openAiKey });
 
 class ChatService {
   async askLoreKeeper(userId: string, message: string, persona?: string) {
-    const relatedEntries = await memoryService.searchEntries(userId, { search: message, limit: 12 });
     const relatedEntries = await memoryService.searchEntriesWithCorrections(userId, {
       search: message,
       limit: 12
@@ -99,8 +98,6 @@ class ChatService {
       return 'No entries available for reflection yet.';
     }
 
-    const context = entries
-      .map((entry) => `Date: ${entry.date}\nTags: ${(entry.tags || []).join(', ')}\n${entry.summary ?? entry.content}`)
     const resolvedEntries: ResolvedMemoryEntry[] = correctionService.applyCorrectionsToEntries(entries);
     const context = resolvedEntries
       .map(

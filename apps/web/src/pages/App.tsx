@@ -336,6 +336,15 @@ const AppContent = () => {
               onRefresh={() => {
                 if (lastPrompt) askLoreKeeper(lastPrompt, persona);
               }}
+              onAsk={async (message) => {
+                try {
+                  setLastPrompt(message);
+                  await askLoreKeeper(message, persona);
+                } catch (error) {
+                  console.error('Failed to ask Lore Keeper:', error);
+                  throw error; // Re-throw to let ChatPanel handle display
+                }
+              }}
             />
           </div>
           <div className="space-y-6">

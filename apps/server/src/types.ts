@@ -163,39 +163,6 @@ export type LoreKeeperPrompt = {
   date?: string;
 };
 
-export type MemoryGraphNodeType = 'entry' | 'person' | 'place' | 'event' | 'tag' | 'theme';
-
-export type MemoryGraphNode = {
-  id: string;
-  type: MemoryGraphNodeType;
-  label: string;
-  weight: number;
-  firstSeen: string;
-  lastSeen: string;
-  sentiments?: {
-    score: number;
-    samples: string[];
-  };
-  meta?: Record<string, unknown>;
-};
-
-export type MemoryGraphEdge = {
-  id: string;
-  from: string;
-  to: string;
-  weight: number;
-  reasons: string[];
-  lastSeen: string;
-  decay: number;
-  sentimentImpact?: number;
-};
-
-export type MemoryGraph = {
-  nodes: MemoryGraphNode[];
-  edges: MemoryGraphEdge[];
-  generatedAt: string;
-  entryCount: number;
-};
 
 export type EvolutionInsights = {
   personaTitle: string;
@@ -260,7 +227,7 @@ export type LocationProfile = {
   sources: string[];
 };
 
-export type MemoryGraphNodeType = 'event' | 'person' | 'place' | 'tag' | 'theme' | 'chapter';
+export type MemoryGraphNodeType = 'entry' | 'event' | 'person' | 'place' | 'tag' | 'theme' | 'chapter';
 
 export type MemoryGraphEdgeType =
   | 'co_occurrence'
@@ -275,6 +242,12 @@ export type MemoryGraphNode = {
   label: string;
   weight?: number;
   metadata?: Record<string, unknown>;
+  firstSeen?: string;
+  lastSeen?: string;
+  sentiments?: {
+    score: number;
+    samples: string[];
+  };
 };
 
 export type MemoryGraphEdge = {
@@ -292,4 +265,5 @@ export type MemoryGraph = {
   nodes: MemoryGraphNode[];
   edges: MemoryGraphEdge[];
   generatedAt: string;
+  entryCount?: number;
 };
