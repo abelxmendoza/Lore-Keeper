@@ -4,6 +4,7 @@ import { v4 as uuid } from 'uuid';
 import { logger } from '../logger';
 import type { ChapterTimeline, JournalQuery, MemoryEntry, MemorySource, MonthGroup } from '../types';
 import { chapterService } from './chapterService';
+import { embeddingService } from './embeddingService';
 import { supabaseAdmin } from './supabaseClient';
 
 export type SaveEntryPayload = {
@@ -20,6 +21,7 @@ export type SaveEntryPayload = {
 
 class MemoryService {
   async saveEntry(payload: SaveEntryPayload): Promise<MemoryEntry> {
+    const isEncrypted = Boolean((payload.metadata as { encrypted?: boolean } | undefined)?.encrypted);
     const entry: MemoryEntry = {
       id: uuid(),
       user_id: payload.userId,
@@ -32,6 +34,15 @@ class MemoryService {
       source: payload.source ?? 'manual',
       metadata: payload.metadata ?? {}
     };
+
+    if (!isEncrypted) {
+      try {
+        const embedding = await embeddingService.embedText(payload.summary ?? payload.content);
+        entry.embedding = embedding;
+      } catch (error) {
+        logger.warn({ error }, 'Entry saved without embedding');
+      }
+    }
 
     const { error } = await supabaseAdmin.from('journal_entries').insert(entry);
     if (error) {
@@ -59,6 +70,10 @@ class MemoryService {
   }
 
   async searchEntries(userId: string, query: JournalQuery = {}): Promise<MemoryEntry[]> {
+    if (query.semantic && query.search) {
+      return this.semanticSearchEntries(userId, query.search, query.limit, query.threshold);
+    }
+
     let builder = supabaseAdmin.from('journal_entries').select('*').eq('user_id', userId);
 
     if (query.search) {
@@ -84,6 +99,45 @@ class MemoryService {
     }
 
     return data ?? [];
+  }
+
+  async getEntry(userId: string, entryId: string): Promise<MemoryEntry | null> {
+    const { data, error } = await supabaseAdmin
+      .from('journal_entries')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('id', entryId)
+      .single();
+
+    if (error) {
+      logger.error({ error }, 'Failed to fetch entry by id');
+      return null;
+    }
+
+    return data as MemoryEntry;
+  }
+
+  async semanticSearchEntries(
+    userId: string,
+    search: string,
+    limit = 20,
+    threshold = 0.4
+  ): Promise<MemoryEntry[]> {
+    const embedding = await embeddingService.embedText(search);
+
+    const { data, error } = await supabaseAdmin.rpc('match_journal_entries', {
+      user_uuid: userId,
+      query_embedding: embedding,
+      match_threshold: threshold,
+      match_count: limit
+    });
+
+    if (error) {
+      logger.error({ error }, 'Failed to run semantic search');
+      throw error;
+    }
+
+    return (data as MemoryEntry[]) ?? [];
   }
 
   private groupByMonth(entries: MemoryEntry[]): MonthGroup[] {

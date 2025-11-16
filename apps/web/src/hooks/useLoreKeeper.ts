@@ -66,6 +66,8 @@ export const useLoreKeeper = () => {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [tags, setTags] = useState<{ name: string; count: number }[]>([]);
   const [answer, setAnswer] = useState('');
+  const [reflection, setReflection] = useState('');
+  const [searchResults, setSearchResults] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(false);
 
   const refreshEntries = useCallback(async () => {
@@ -103,18 +105,60 @@ export const useLoreKeeper = () => {
     return data.entry;
   }, []);
 
-  const askLoreKeeper = useCallback(async (message: string) => {
+  const askLoreKeeper = useCallback(async (message: string, persona?: string) => {
     setLoading(true);
     try {
       const data = await fetchJson<{ answer: string }>('/api/chat', {
         method: 'POST',
-        body: JSON.stringify({ message })
+        body: JSON.stringify({ message, persona })
       });
       setAnswer(data.answer);
       return data.answer;
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const reflect = useCallback(
+    async (payload: { mode: 'entry' | 'month' | 'advice'; entryId?: string; month?: string; persona?: string; prompt?: string }) => {
+      const data = await fetchJson<{ reflection: string }>(`/api/summary/reflect`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      setReflection(data.reflection);
+      return data.reflection;
+    },
+    []
+  );
+
+  const semanticSearch = useCallback(async (search: string, semantic = false) => {
+    const params = new URLSearchParams({ search });
+    if (semantic) params.set('semantic', 'true');
+    const data = await fetchJson<{ entries: JournalEntry[] }>(`/api/entries?${params.toString()}`);
+    setSearchResults(data.entries);
+    return data.entries;
+  }, []);
+
+  const uploadVoiceEntry = useCallback(async (file: File) => {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    const form = new FormData();
+    form.append('audio', file);
+
+    const res = await fetch('/api/entries/voice', {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      body: form
+    });
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      throw new Error(error.error ?? 'Failed to upload voice note');
+    }
+
+    const parsed = await res.json();
+    setEntries((prev) => [parsed.entry, ...prev]);
+    return parsed.entry as JournalEntry;
   }, []);
 
   const summarize = useCallback(async (from: string, to: string) => {
@@ -171,9 +215,14 @@ export const useLoreKeeper = () => {
     timelineCount,
     chapters,
     answer,
+    reflection,
+    searchResults,
     askLoreKeeper,
     createEntry,
     createChapter,
+    reflect,
+    semanticSearch,
+    uploadVoiceEntry,
     refreshEntries,
     refreshTimeline,
     refreshChapters,

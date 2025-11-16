@@ -22,6 +22,7 @@ pnpm run dev:web         # http://localhost:5173
 
 Fill out `.env` based on `.env.example` before running either service.
 - `OPENAI_API_MODEL` is used by the server for GPT calls (defaults to `gpt-4o-mini`).
+- `OPENAI_EMBEDDING_MODEL` powers semantic search embeddings (defaults to `text-embedding-3-small`).
 
 ### Required Database Tables
 
@@ -63,6 +64,19 @@ create table if not exists public.daily_summaries (
   summary text,
   tags text[] default '{}'
 );
+
+-- Semantic search support (pgvector)
+alter table if exists public.journal_entries add column if not exists embedding vector(1536);
+create index if not exists journal_entries_embedding_idx on public.journal_entries using ivfflat (embedding vector_cosine_ops) with (lists = 100);
+create or replace function public.match_journal_entries(user_uuid uuid, query_embedding vector, match_threshold float, match_count int)
+returns table (id uuid, user_id uuid, date timestamptz, content text, tags text[], chapter_id uuid, mood text, summary text, source text, metadata jsonb, embedding vector, similarity float)
+language sql stable as $$
+  select *, 1 - (embedding <=> query_embedding) as similarity
+  from public.journal_entries
+  where user_id = user_uuid
+  order by embedding <=> query_embedding
+  limit match_count;
+$$;
 ```
 
 Grant `select/insert/update` on both tables to the `service_role` used by the API. Frontend reads data through the API so you do not need row level policies for now, but enabling RLS is recommended if you later expose Supabase directly to the client.
@@ -75,6 +89,7 @@ Grant `select/insert/update` on both tables to the `service_role` used by the AP
 | `/api/entries` | POST | Create a manual entry (keywords auto-tagged) |
 | `/api/entries/suggest-tags` | POST | GPT-assisted tag suggestions |
 | `/api/entries/detect` | POST | Check if a message should be auto-saved |
+| `/api/entries/voice` | POST | Upload an audio clip; Whisper transcribes and GPT formats a journal entry |
 | `/api/chapters` | GET | List chapters for the authenticated user |
 | `/api/chapters` | POST | Create a chapter (title + dates + description) |
 | `/api/chapters/:chapter_id/summary` | POST | Generate & store a GPT summary for a chapter |
@@ -87,6 +102,7 @@ Grant `select/insert/update` on both tables to the `service_role` used by the AP
 | `/api/timeline` | GET | Chapter + month grouped timeline feed |
 | `/api/timeline/tags` | GET | Tag cloud metadata |
 | `/api/summary` | POST | Date range summary (weekly digest, etc.) |
+| `/api/summary/reflect` | POST | GPT reflect mode; analyze a month, entry, or give advice |
 
 All endpoints expect a Supabase auth token via `Authorization: Bearer <access_token>` header.
 
@@ -95,6 +111,9 @@ All endpoints expect a Supabase auth token via `Authorization: Bearer <access_to
 - Users can create named chapters with start/end dates and optional descriptions.
 - Journal entries can be assigned to chapters; the `/api/timeline` endpoint returns chapters grouped by month alongside an `unassigned` bucket.
 - A chapter summary endpoint (`/api/chapters/:chapter_id/summary`) sends entries to OpenAI and stores the resulting summary back onto the chapter.
+- Semantic search is backed by pgvector embeddings; pass `?semantic=true&search=...` to `/api/entries` to fetch cosine-similar memories.
+- Voice-to-entry uploads use Whisper to transcribe and GPT to normalize the entry.
+- Reflect Mode (`/api/summary/reflect`) packages recent entries into a persona-aware insight.
 
 ### Frontend Highlights
 
@@ -102,6 +121,7 @@ All endpoints expect a Supabase auth token via `Authorization: Bearer <access_to
 - Chat-style journal composer with auto keyword detection ("log", "update", "chapter", …)
 - Chapters dashboard with collapsible arcs + unassigned entries, and chapter summaries via GPT
 - **Background Photo Processing** - Photos are processed automatically to create journal entries (no gallery UI)
+- Composer supports optional AES-GCM client-side encryption and voice uploads that transcribe with Whisper.
 - Dual-column dashboard: timeline, tag cloud, AI summary, and "Ask Lore Keeper" panel
 - Local cache (localStorage) for offline-first memory preview
 - Dark cyberpunk palette, neon accents, Omega splash copy
