@@ -4,6 +4,7 @@ from .event_schema import TimelineEvent
 from .narrative_stitcher import NarrativeStitcher
 from .voice_memo_ingestion import VoiceMemoIngestor, VoiceMemo
 from .drift_auditor import DriftAuditor
+from .weekly_arc.arc_engine import WeeklyArcEngine
 from .daily_briefing.briefing_engine import DailyBriefingEngine
 
 __all__ = [
@@ -14,5 +15,6 @@ __all__ = [
     "VoiceMemoIngestor",
     "VoiceMemo",
     "DriftAuditor",
+    "WeeklyArcEngine",
     "DailyBriefingEngine",
 ]
