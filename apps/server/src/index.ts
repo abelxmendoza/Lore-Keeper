@@ -16,6 +16,7 @@ import { evolutionRouter } from './routes/evolution';
 import { correctionsRouter } from './routes/corrections';
 import { canonRouter } from './routes/canon';
 import { ladderRouter } from './routes/ladder';
+import { memoryGraphRouter } from './routes/memoryGraph';
 import { memoryLadderRouter } from './routes/memoryLadder';
 import { peoplePlacesRouter } from './routes/peoplePlaces';
 
@@ -47,6 +48,7 @@ app.use('/api/evolution', evolutionRouter);
 app.use('/api/corrections', correctionsRouter);
 app.use('/api/canon', canonRouter);
 app.use('/api/ladder', ladderRouter);
+app.use('/api/memory-graph', memoryGraphRouter);
 app.use('/api/memory-ladder', memoryLadderRouter);
 app.use('/api/people-places', peoplePlacesRouter);
 

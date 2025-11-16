@@ -163,6 +163,38 @@ export type LoreKeeperPrompt = {
   date?: string;
 };
 
+export type MemoryGraphNodeType = 'entry' | 'person' | 'place' | 'event' | 'tag' | 'theme';
+
+export type MemoryGraphNode = {
+  id: string;
+  type: MemoryGraphNodeType;
+  label: string;
+  weight: number;
+  firstSeen: string;
+  lastSeen: string;
+  sentiments?: {
+    score: number;
+    samples: string[];
+  };
+  meta?: Record<string, unknown>;
+};
+
+export type MemoryGraphEdge = {
+  id: string;
+  from: string;
+  to: string;
+  weight: number;
+  reasons: string[];
+  lastSeen: string;
+  decay: number;
+  sentimentImpact?: number;
+};
+
+export type MemoryGraph = {
+  nodes: MemoryGraphNode[];
+  edges: MemoryGraphEdge[];
+  generatedAt: string;
+  entryCount: number;
 export type EvolutionInsights = {
   personaTitle: string;
   personaTraits: string[];
