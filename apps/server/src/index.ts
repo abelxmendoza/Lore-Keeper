@@ -19,6 +19,7 @@ import { ladderRouter } from './routes/ladder';
 import { memoryGraphRouter } from './routes/memoryGraph';
 import { memoryLadderRouter } from './routes/memoryLadder';
 import { peoplePlacesRouter } from './routes/peoplePlaces';
+import { locationsRouter } from './routes/locations';
 import { memoryGraphRouter } from './routes/memoryGraph';
 
 assertConfig();
@@ -52,6 +53,7 @@ app.use('/api/ladder', ladderRouter);
 app.use('/api/memory-graph', memoryGraphRouter);
 app.use('/api/memory-ladder', memoryLadderRouter);
 app.use('/api/people-places', peoplePlacesRouter);
+app.use('/api/locations', locationsRouter);
 app.use('/api/memory-graph', memoryGraphRouter);
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
