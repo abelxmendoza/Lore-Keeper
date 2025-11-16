@@ -24,6 +24,7 @@ import { useTaskEngine } from '../hooks/useTaskEngine';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { DeleteAccountDialog } from '../components/settings/DeleteAccountDialog';
+import { AccountSafetyPanel } from '../components/settings/AccountSafetyPanel';
 
 const formatRange = (days = 7) => {
   const end = new Date();
@@ -327,6 +328,7 @@ const AppContent = () => {
                   <TagCloud tags={tags} />
                 </div>
               </div>
+              <AccountSafetyPanel />
             </div>
           </div>
         ) : (
@@ -352,6 +354,7 @@ const AppContent = () => {
                 <TagCloud tags={tags} />
               </div>
             </div>
+            <AccountSafetyPanel />
           </div>
         )}
         <div className="grid gap-6 xl:grid-cols-3" data-chat-panel>

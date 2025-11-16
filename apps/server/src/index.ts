@@ -25,6 +25,14 @@ import { tasksRouter } from './routes/tasks';
 import { legalRouter } from './routes/legal';
 import { billingRouter } from './billing/billingRouter';
 import { accountRouter } from './routes/account';
+import { authMiddleware } from './middleware/auth';
+import { rateLimitMiddleware } from './middleware/rateLimit';
+import { inputSanitizer } from './middleware/sanitize';
+import { secureHeaders } from './middleware/secureHeaders';
+import { auditLogger } from './middleware/auditLogger';
+import { accountRouter } from './routes/account';
+import { onboardingRouter } from './routes/onboarding';
+import { personaRouter } from './routes/persona';
 
 assertConfig();
 
@@ -63,6 +71,30 @@ app.use('/api/tasks', tasksRouter);
 app.use('/api/legal', legalRouter);
 app.use('/api/billing', billingRouter);
 app.use('/api/account', accountRouter);
+const apiRouter = express.Router();
+apiRouter.use(authMiddleware, rateLimitMiddleware, inputSanitizer, secureHeaders, auditLogger);
+apiRouter.use('/entries', entriesRouter);
+apiRouter.use('/photos', photosRouter);
+apiRouter.use('/calendar', calendarRouter);
+apiRouter.use('/chat', chatRouter);
+apiRouter.use('/timeline', timelineRouter);
+apiRouter.use('/summary', summaryRouter);
+apiRouter.use('/chapters', chaptersRouter);
+apiRouter.use('/evolution', evolutionRouter);
+apiRouter.use('/corrections', correctionsRouter);
+apiRouter.use('/canon', canonRouter);
+apiRouter.use('/ladder', ladderRouter);
+apiRouter.use('/memory-graph', memoryGraphRouter);
+apiRouter.use('/memory-ladder', memoryLadderRouter);
+apiRouter.use('/people-places', peoplePlacesRouter);
+apiRouter.use('/locations', locationsRouter);
+apiRouter.use('/x', xRouter);
+apiRouter.use('/tasks', tasksRouter);
+apiRouter.use('/account', accountRouter);
+apiRouter.use('/onboarding', onboardingRouter);
+apiRouter.use('/persona', personaRouter);
+
+app.use('/api', apiRouter);
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   logger.error({ err }, 'Unhandled error');
