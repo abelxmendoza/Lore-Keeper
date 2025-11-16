@@ -12,6 +12,10 @@ Lore Keeper is an AI-powered journaling platform that blends Supabase auth, GPT-
 - **Backend**: Express + TypeScript, OpenAI GPT-4, Supabase/Postgres for storage, cron-ready jobs
 - **Auth & DB**: Supabase Auth + Supabase/Postgres tables for `journal_entries` and `daily_summaries`
 
+## Hypergraph Quantum Index (HQI)
+
+HQI is the unified search engine for Lore Keeper. It blends vectors, graph edges, timeline data, tags, characters, and motifs into a single ranking function. This enables deep life querying, fast recall, and context-rich retrieval.
+
 ## Getting Started
 
 ```bash
