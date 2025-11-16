@@ -9,6 +9,7 @@ from .daily_briefing.briefing_engine import DailyBriefingEngine
 from .season_engine.season_engine import SeasonEngine
 from .monthly_arc.monthly_engine import MonthlyArcEngine
 from .book.book_engine import BookEngine
+from .identity.identity_engine import IdentityEngine
 
 __all__ = [
     "TimelineManager",
@@ -23,4 +24,5 @@ __all__ = [
     "SeasonEngine",
     "MonthlyArcEngine",
     "BookEngine",
+    "IdentityEngine",
 ]
