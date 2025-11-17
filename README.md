@@ -79,14 +79,18 @@ Lore Keeper is an AI-powered journaling platform that blends Supabase authentica
 Lore Keeper is built with modern web technologies:
 
 **Frontend (What You See)**
-- **React + Vite**: Fast, modern web interface
-- **Tailwind CSS**: Beautiful, responsive styling
+- **React + Vite**: Fast, modern web interface with hot module replacement
+- **Tailwind CSS**: Beautiful, responsive styling with cyberpunk theme
 - **TypeScript**: Type-safe code for reliability
+- **Vitest + Playwright**: Comprehensive testing suite (unit, component, E2E)
+- **Accessibility**: ARIA labels, keyboard navigation, skip links, screen reader support
 
 **Backend (The Brain)**
 - **Express + TypeScript**: API server that handles all requests
-- **OpenAI GPT-4**: AI that understands and generates responses
+- **OpenAI GPT-4**: AI that understands and generates responses with streaming support
 - **Supabase/PostgreSQL**: Database that stores all your memories securely
+- **Time Engine**: Comprehensive timestamp parsing, timezone handling, and chronological sorting
+- **Rate Limiting & Security**: Request validation, rate limiting, security headers, audit logging
 
 **Mobile App**
 - **React Native + Expo**: Native iOS and Android apps
@@ -95,29 +99,37 @@ Lore Keeper is built with modern web technologies:
 - **Python Package**: Advanced timeline management and narrative generation
 - **Insight Engine**: Finds patterns and themes in your entries
 - **Persona Engine**: Adapts to who you are right now
+- **Omega Chat Service**: Full-featured chat with orchestrator integration, HQI search, and Memory Fabric traversal
 
 ### Key Features Explained Simply
 
 | Feature | What It Does | Why It Matters |
 |---------|--------------|----------------|
-| **Semantic Search** | Finds memories by meaning, not just keywords | Ask "times I felt overwhelmed" and find relevant entries even if you didn't use those exact words |
-| **Timeline** | Organizes your life chronologically | See your story unfold over time, with chapters and arcs |
-| **Character Tracking** | Remembers people and relationships | See how relationships evolve, who matters most, and shared memories |
-| **Continuity Engine** | Detects inconsistencies in your story | Keeps your journal accurate and consistent |
-| **Memory Fabric** | Visualizes connections between memories | See how different parts of your life connect |
-| **Identity Pulse** | Tracks who you are over time | Understand how you've changed and evolved |
+| **Omega Chat** | AI assistant with streaming responses, slash commands, and full context | Chat naturally with your life story - ask questions, get insights, and receive strategic guidance |
+| **Memory Explorer** | Smart semantic search with natural language query parsing | Find memories by meaning - "times I felt overwhelmed last spring" finds exactly what you need |
+| **Lore Book** | Reading-focused memoir interface with color-coded timeline | Read your life story like a book with customizable font sizes and spacing |
+| **Time Engine** | Accurate chronological processing and timestamp management | Ensures all dates, times, and events are correctly ordered and tracked |
+| **Timeline** | Color-coded horizontal timeline organizing your life chronologically | See your story unfold over time with visual chapter markers and entry indicators |
+| **Character Tracking** | Remembers people and relationships with detailed profiles | See how relationships evolve, who matters most, and shared memories |
+| **Continuity Engine** | Detects inconsistencies in your story | Keeps your journal accurate and consistent with conflict detection |
+| **Memory Fabric** | Visualizes connections between memories | See how different parts of your life connect in a graph view |
+| **Identity Pulse** | Tracks who you are over time | Understand how you've changed and evolved with persona tracking |
+| **Enterprise Features** | Testing, CI/CD, security, and accessibility | Production-ready software with automated testing and security scanning |
 
 ---
 
 ## Tech Stack (Detailed)
 
-- **Frontend**: React + Vite, Tailwind, shadcn-inspired UI primitives, Zustand state helpers
-- **Backend**: Express + TypeScript, OpenAI GPT-4, Supabase/Postgres for storage, cron-ready jobs
+- **Frontend**: React + Vite, Tailwind, shadcn-inspired UI primitives, Zustand state helpers, Vitest + Playwright for testing
+- **Backend**: Express + TypeScript, OpenAI GPT-4, Supabase/Postgres for storage, cron-ready jobs, rate limiting, request validation
 - **Python Package**: Timeline management, narrative engines (daily/weekly/monthly arcs), voice memo ingestion, drift auditing
 - **Mobile**: React Native with Expo for iOS/Android
-- **Auth & DB**: Supabase Auth + Supabase/Postgres tables for `journal_entries`, `daily_summaries`, `chapters`, `tasks`, `timeline_events`, `characters`, and more
+- **Auth & DB**: Supabase Auth + Supabase/Postgres tables for `journal_entries`, `daily_summaries`, `chapters`, `tasks`, `timeline_events`, `characters`, `memoir_sections`, and more
 - **Insight Engine**: Python-based signal detector that clusters embeddings, surfaces motifs, and predicts new arcs
 - **Persona Engine**: Deterministic Omega Persona Engine that blends identity arcs, seasonal trends, and emotional slopes into a live persona state
+- **Time Engine**: Comprehensive timestamp parsing, timezone handling, chronological sorting, and conflict detection
+- **CI/CD**: GitHub Actions for automated testing, linting, building, and CodeQL security scanning
+- **Accessibility**: WCAG-compliant components with ARIA labels, keyboard navigation, and screen reader support
 
 ## Core Systems Explained
 
@@ -147,23 +159,25 @@ Timeline → IdentityEngine → OmegaPersonaEngine → Persona Rules → API/Cha
             SeasonEngine      Daily/Weekly Briefings
 ```
 
-### Hypergraph Quantum Index (HQI)
+### Memory Explorer (formerly HQI)
 
-**What it does:** A powerful search engine that finds memories by meaning, not just keywords.
+**What it does:** A powerful search engine with smart query parsing that finds memories by meaning, not just keywords.
 
-**Why it matters:** Traditional search looks for exact words. HQI understands what you're *really* asking for. Search "moments of clarity" and it finds entries about breakthroughs, epiphanies, and sudden understanding — even if you never used those exact words.
+**Why it matters:** Traditional search looks for exact words. Memory Explorer understands what you're *really* asking for. Search "moments of clarity last spring" and it automatically extracts the date range, finds entries about breakthroughs, epiphanies, and sudden understanding — even if you never used those exact words.
 
 **How it works:**
+- **Smart Query Parser**: Extracts filters from natural language (date ranges, characters, tags, motifs)
 - Combines multiple ways of understanding your memories (meaning, time, relationships)
 - Searches across everything: journal entries, tasks, people, story arcs, and themes
 - Ranks results by relevance, not just keyword matches
-- Provides instant results with filters to narrow down
+- Provides instant results with modal display showing timeline context and characters
 
 **Technical Details:**
+- **Natural Language Parsing**: Automatically detects date ranges ("last week", "spring 2023"), character mentions, tags, and motifs
 - **Multi-modal search**: Search across memories, tasks, characters, arcs, and motifs in a single query
 - **Filter support**: Filter results by type, tags, date ranges, and more
 - **Unified ranking**: Combines semantic similarity, temporal proximity, and graph relationships
-- **Search overlay**: Full-screen search interface with instant results and filters
+- **Result Modal**: Detailed view with memory content, timeline context, and character information
 
 ### Continuity Engine
 
@@ -542,14 +556,29 @@ Grant `select/insert/update` on both tables to the `service_role` used by the AP
 
 #### Chat & AI
 
-**What these do:** Talk to Lore Keeper like you would ChatGPT, but it knows your entire life story. Choose from three personas:
-- **The Archivist**: Analytical and precise, focuses on facts and patterns
-- **The Confidante**: Warm and empathetic, provides emotional insights  
-- **Angel Negro**: Creative and poetic, offers unique perspectives
+**What these do:** Talk to Lore Keeper like you would ChatGPT, but it knows your entire life story. The Omega Chat interface provides:
+- **Streaming Responses**: Real-time, word-by-word display of AI responses
+- **Slash Commands**: `/recent`, `/search`, `/characters`, `/arcs`, `/debug` for quick actions
+- **Message Actions**: Copy, regenerate, edit, and delete messages
+- **Clickable Sources**: Interactive links to related entries, chapters, and characters
+- **Conversation Persistence**: Saves chat history to localStorage
+- **Progressive Loading**: Shows detailed loading stages (analyzing, searching, connecting, reasoning, generating)
+- **Export**: Export conversations as Markdown or JSON
+- **In-Conversation Search**: Search through your chat history
+
+**Features:**
+- Full orchestrator context integration (timeline, identity, characters, tasks, arcs)
+- HQI semantic search for finding relevant memories
+- Memory Fabric neighbor traversal for deeper connections
+- Inline citations with source links
+- Continuity checking and conflict detection
+- Strategic guidance based on life patterns
+- Date/time extraction from natural language
 
 | Endpoint | Method | Description |
 | --- | --- | --- |
-| `/api/chat` | POST | "Ask Lore Keeper" – returns GPT-4 answer grounded in journal data with persona support (The Archivist, The Confidante, Angel Negro) |
+| `/api/chat` | POST | Non-streaming chat endpoint (fallback) |
+| `/api/chat/stream` | POST | Streaming chat endpoint with SSE (Server-Sent Events) |
 
 #### Timeline & Summaries
 
@@ -633,12 +662,24 @@ Grant `select/insert/update` on both tables to the `service_role` used by the AP
 | `/api/orchestrator/hqi` | GET | HQI search results |
 | `/api/orchestrator/fabric/:memoryId` | GET | Memory fabric neighborhood for a specific memory |
 
-#### HQI Search
+#### Memory Explorer (HQI Search)
 
 | Endpoint | Method | Description |
 | --- | --- | --- |
-| `/api/hqi/search` | GET/POST | Hypergraph Quantum Index search across all lore types |
+| `/api/hqi/search` | GET/POST | Memory Explorer search with smart query parsing across all lore types |
 | `/api/hqi/node/:id/context` | GET | Get context for a specific HQI node |
+| `/api/entries/:id` | GET | Get detailed entry information for modal display |
+
+#### Time Engine
+
+| Endpoint | Method | Description |
+| --- | --- | --- |
+| `/api/time/parse` | POST | Parse a timestamp string (ISO, relative, fuzzy) |
+| `/api/time/range` | POST | Create a time range from two timestamps |
+| `/api/time/sort` | POST | Sort an array of objects by timestamp |
+| `/api/time/difference` | POST | Calculate time difference between two timestamps |
+| `/api/time/conflicts` | POST | Detect temporal conflicts in an array of timestamps |
+| `/api/time/timezone` | POST | Set user timezone preference |
 
 #### Identity & Persona
 
@@ -742,32 +783,54 @@ All endpoints expect a Supabase auth token via `Authorization: Bearer <access_to
 - **Chapters Dashboard**: Collapsible arcs + unassigned entries, chapter summaries via GPT
 - **Photo Processing**: Background processing automatically creates journal entries (no gallery UI)
 - **Voice Memos**: Optional AES-GCM client-side encryption and voice uploads that transcribe with Whisper
-- **Interactive "Ask Lore Keeper" Chatbot**: Query your memories with three personas:
-  - **The Archivist**: Analytical and precise, focuses on facts and patterns
-  - **The Confidante**: Warm and empathetic, provides emotional insights
-  - **Angel Negro**: Creative and poetic, offers unique perspectives
+- **Omega Chat Interface**: Full-featured chat with:
+  - **Streaming Responses**: Real-time word-by-word display
+  - **Slash Commands**: `/recent`, `/search`, `/characters`, `/arcs`, `/debug`
+  - **Message Actions**: Copy, regenerate, edit, delete
+  - **Clickable Sources**: Interactive links to entries, chapters, characters
+  - **Conversation Persistence**: Auto-saves to localStorage
+  - **Progressive Loading**: Detailed loading stages
+  - **Export**: Markdown/JSON export
+  - **In-Conversation Search**: Search chat history
+  - **Full Context Integration**: Orchestrator, HQI, Memory Fabric, Continuity
 - **Task Engine Panel**: Manage tasks extracted from chat, sync with Microsoft To Do, track task events
 - **Daily Briefing**: Executive-style summaries combining tasks, timeline events, and activity patterns
 - **Task Timeline Links**: Automatic linking of tasks to timeline events and journal entries for unified memory tracking
-- **HQI Search Overlay**: Full-screen Hypergraph Quantum Index search with:
+- **Memory Explorer**: Smart semantic search with:
+  - **Natural Language Parsing**: Extracts date ranges, characters, tags, motifs from queries
   - Multi-modal search across memories, tasks, characters, arcs, and motifs
-  - Filter sidebar for type, tags, date ranges
+  - Single search bar interface (no separate filters needed)
   - Instant results with relevance scores
-  - Result cards with snippets and metadata
+  - **Result Modal**: Detailed view with memory content, timeline context, and characters
+  - Detected filters displayed as badges
 - **Omni-Timeline Panel**: Unified timeline view with:
+  - **Color-Coded Timeline**: Horizontal scrollable timeline at the top showing chapters and entries
+  - **Card View**: Rich timeline event cards with summaries, tags, and chapter info
+  - **Entry Modal**: Detailed view for individual entries with related entries and characters
+  - **Density Toggle**: Switch between 'detailed', 'summary', and 'chapters' views
+  - **Chronological Sorting**: Uses TimeEngine for accurate chronological ordering
   - **Layer Toggles**: Show/hide events, tasks, arcs, identity pulses, drift alerts, tags, voice memos
   - **Arc Ribbon**: Visual representation of narrative arcs
   - **Identity Pulse**: Real-time identity state indicators
   - **Drift Tags**: Visual markers for timeline drift
   - **Voice Memo Markers**: Special indicators for voice entries
-  - **Event Cards**: Rich timeline event cards with summaries and tags
 - **Continuity Panel**: Monitor lore consistency with:
   - **Canon Facts List**: View verified facts about characters, identity, locations
   - **Conflict List**: See detected factual and temporal conflicts
   - **Stability Meter**: Visual consistency scores
   - **Continuity Graph**: Visualize relationships between facts
   - **Merge Suggestion Dialog**: Resolve conflicts with AI suggestions
+- **Lore Book**: Reading-focused memoir interface with:
+  - **Book-Like Reading Experience**: Serif fonts, justified text, customizable font sizes and spacing
+  - **Color-Coded Timeline**: Horizontal scrollable timeline showing reading progress
+  - **Section Navigation**: Previous/Next buttons and section dots for quick navigation
+  - **Reading Controls**: Adjustable font size (Small/Normal/Large/Extra Large) and line spacing (Tight/Normal/Wide)
+  - **Ask Lore Keeper**: Integrated chat interface at the bottom for context-aware questions
+  - **Section Periods**: Displays time periods for each section
+  - **Empty State**: Helpful message when no memoir sections exist
+
 - **Character Pages**: Dedicated character views with:
+  - **User Profile**: Main user's profile with stats, insights, and identity pulse at the top
   - **Character Header**: Profile with portrait, pronouns, bio, traits
   - **Relationship Graph**: Visual graph of character relationships
   - **Closeness Chart**: Track relationship closeness over time
@@ -788,6 +851,14 @@ All endpoints expect a Supabase auth token via `Authorization: Bearer <access_to
   - **Fabric Filter Bar**: Filter nodes by type, tags, date
   - **Fabric Node Cards**: Detailed views of memory nodes
   - **Relation Types**: Semantic, temporal, emotional, and identity connections
+- **Time Engine Integration**: Accurate chronological processing throughout the app:
+  - Timestamp parsing (ISO, relative, fuzzy dates)
+  - Timezone handling and user preference storage
+  - Chronological sorting with precision tracking
+  - Temporal conflict detection
+  - Relative time calculations
+  - TimeDisplay component for consistent date formatting
+
 - **Semantic Search**: Natural language search with meaning-based matching (toggle semantic/keyword modes)
 - **Corrections System**: Archive and correct entries while preserving history
 - **Memory Graph**: Visualize connections between memories, people, and places
@@ -800,10 +871,22 @@ All endpoints expect a Supabase auth token via `Authorization: Bearer <access_to
 - **Onboarding Flow**: Guided setup with memory import from files, calendar, or photos
 - **Agent System**: View and run autonomous agents for maintenance tasks
 - **Notebook Features**: Arc suggestions, mood scoring, and memory previews while composing
+- **Memoir Editor**: Full-featured memoir editing with:
+  - **Omega Canon Keeper**: Integrated continuity panel for managing canonical facts
+  - AI-assisted writing and editing
+  - Document upload support
+  - Section management
+  - History tracking
+- **Enterprise Features**:
+  - **Testing**: Vitest for unit/component tests, Playwright for E2E tests
+  - **CI/CD**: GitHub Actions for automated testing, linting, building, and CodeQL security scanning
+  - **Security**: Rate limiting, request validation (Zod), security headers, audit logging
+  - **Accessibility**: ARIA labels, keyboard navigation, skip links, focus management, ESLint a11y rules
 - Dual-column dashboard: timeline, tag cloud, AI summary, chatbot panel, and task management
 - Real-time error handling with helpful messages for backend connectivity issues
 - Local cache (localStorage) for offline-first memory preview
 - Dark cyberpunk palette with neon accents, Omega splash copy, and theme customization
+- **UI Components**: Consistent Button, Card, Badge components with variants and accessibility support
 
 ---
 
@@ -998,10 +1081,17 @@ lorekeeper/
 22. ✅ Onboarding flow implemented - guided setup with memory import.
 23. ✅ Agent system implemented - autonomous maintenance agents.
 24. ✅ Notebook features implemented - arc suggestions, mood scoring, memory previews.
-25. Add export routines (Markdown/PDF) and toggle for public blog feed.
-26. Extend cron job to automatically create daily summaries and AI prompts.
-27. Add more chatbot personas and customization options.
-28. Integrate Python narrative engines with backend API.
+25. ✅ Omega Chat implemented - streaming responses, slash commands, message actions, full context integration.
+26. ✅ Time Engine implemented - comprehensive timestamp parsing, timezone handling, chronological sorting.
+27. ✅ Lore Book implemented - reading-focused memoir interface with color-coded timeline and integrated chat.
+28. ✅ Memory Explorer implemented - smart query parsing with natural language filter extraction.
+29. ✅ Enterprise features implemented - testing (Vitest/Playwright), CI/CD (GitHub Actions), security (rate limiting, validation), accessibility (ARIA, keyboard nav).
+30. ✅ UI components updated - consistent Button, Card, Badge components with variants and accessibility.
+31. ✅ Dummy data population - comprehensive development data generator for testing and demos.
+32. Add export routines (Markdown/PDF) and toggle for public blog feed.
+33. Extend cron job to automatically create daily summaries and AI prompts.
+34. Add more chatbot personas and customization options.
+35. Integrate Python narrative engines with backend API.
 
 ---
 
