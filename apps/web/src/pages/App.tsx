@@ -29,6 +29,9 @@ import { useLoreKeeper } from '../hooks/useLoreKeeper';
 import { useTaskEngine } from '../hooks/useTaskEngine';
 import { fetchJson } from '../lib/api';
 import { Button } from '../components/ui/button';
+import { AccountSafetyPanel } from '../components/settings/AccountSafetyPanel';
+import { AgentPanel } from '../components/AgentPanel';
+import { NeonNotebook } from '../components/neon-notebook/NeonNotebook';
 
 const formatRange = (days = 7) => {
   const end = new Date();
@@ -214,6 +217,10 @@ const AppContent = () => {
       <div className="grid gap-6 xl:grid-cols-[2fr_1.1fr]">
         <div className="space-y-6">
           <div id="journal-composer">
+        </header>
+        <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+          <div className="space-y-6">
+            <NeonNotebook />
             <JournalComposer
               loading={loading}
               chapters={chapters}
