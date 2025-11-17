@@ -34,6 +34,7 @@ import { onboardingRouter } from './routes/onboarding';
 import { agentsRouter } from './routes/agents';
 import { autopilotRouter } from './routes/autopilot';
 import { personaRouter } from './routes/persona';
+import { orchestratorRouter } from './routes/orchestrator';
 
 assertConfig();
 
@@ -78,6 +79,7 @@ apiRouter.use('/agents', agentsRouter);
 apiRouter.use('/autopilot', autopilotRouter);
 apiRouter.use('/insights', insightsRouter);
 apiRouter.use('/persona', personaRouter);
+apiRouter.use('/orchestrator', orchestratorRouter);
 
 app.use('/api', apiRouter);
 
