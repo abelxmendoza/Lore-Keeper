@@ -95,16 +95,6 @@ export const Sidebar = ({
         Lore Book
       </button>
       <button
-        onClick={() => {
-          const chatPanel = document.querySelector('[data-chat-panel]');
-          chatPanel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }}
-        className="flex w-full items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-sm text-white/70 transition hover:border-primary hover:bg-primary/10"
-      >
-        <Sparkles className="h-4 w-4 text-primary" />
-        Ask Lore Keeper
-      </button>
-      <button
         onClick={() => onScrollToDiscovery?.()}
         className="flex w-full items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-sm text-white/70 transition hover:border-primary hover:bg-primary/10"
       >

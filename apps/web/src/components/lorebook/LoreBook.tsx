@@ -47,7 +47,7 @@ export const LoreBook = () => {
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [fontSize, setFontSize] = useState<'sm' | 'base' | 'lg' | 'xl'>('base');
   const [lineHeight, setLineHeight] = useState<'normal' | 'relaxed' | 'loose'>('relaxed');
-  const [showChat, setShowChat] = useState(false);
+  const [showChat, setShowChat] = useState(true); // Default to open for better UX
 
   useEffect(() => {
     loadMemoir();
@@ -289,7 +289,7 @@ export const LoreBook = () => {
         </Button>
         
         {showChat && (
-          <div className="border-t border-border/40 h-[400px] max-h-[50vh] flex flex-col overflow-hidden bg-black/40">
+          <div className="border-t border-border/40 h-[450px] max-h-[55vh] flex flex-col overflow-hidden bg-black/40">
             <ChatFirstInterface />
           </div>
         )}

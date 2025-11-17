@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { BookOpen, Edit2, Save, X, ChevronRight, ChevronDown, Sparkles, Loader2, MessageSquare, FileText, Eye, EyeOff, Undo2, Redo2, Upload, Layout, Plus, Shield } from 'lucide-react';
+import { BookOpen, Edit2, Save, X, ChevronRight, ChevronDown, Sparkles, Loader2, MessageSquare, FileText, Eye, EyeOff, Undo2, Redo2, Upload, Layout, Plus, Shield, Search } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Textarea } from '../ui/textarea';
@@ -8,6 +8,9 @@ import { fetchJson } from '../../lib/api';
 import { useLoreKeeper } from '../../hooks/useLoreKeeper';
 import { MemoirOutlineEditor } from './MemoirOutlineEditor';
 import { ContinuityPanel } from '../ContinuityPanel';
+import { ColorCodedTimeline } from '../timeline/ColorCodedTimeline';
+import { parseQuery } from '../../utils/parseQuery';
+import { Badge } from '../ui/badge';
 
 type MemoirSection = {
   id: string;
@@ -62,11 +65,17 @@ export const MemoirEditor = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<string | null>(null);
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [detectedFilters, setDetectedFilters] = useState<string[]>([]);
+  const [highlightedSectionId, setHighlightedSectionId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const { refreshTimeline, refreshChapters, entries, refreshEntries } = useLoreKeeper();
+  const { refreshTimeline, refreshChapters, entries, refreshEntries, chapters } = useLoreKeeper();
 
   useEffect(() => {
     loadMemoir();
@@ -503,10 +512,12 @@ export const MemoirEditor = () => {
     const showingOriginal = showOriginal[section.id];
 
     return (
-      <div key={section.id} className="space-y-2">
+      <div key={section.id} className="space-y-2" data-section-id={section.id}>
         <div
-          className={`border rounded-lg ${
-            isEditing || isChatActive
+          className={`border rounded-lg transition-all ${
+            highlightedSectionId === section.id
+              ? 'border-primary bg-primary/10 shadow-lg shadow-primary/20'
+              : isEditing || isChatActive
               ? 'border-primary bg-primary/5'
               : 'border-border/50 bg-black/40'
           }`}
@@ -718,6 +729,102 @@ export const MemoirEditor = () => {
     return aDate.localeCompare(bDate);
   }) : [];
 
+  const handleSearch = async (query: string = searchQuery) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setDetectedFilters([]);
+      setHighlightedSectionId(null);
+      return;
+    }
+
+    setSearchLoading(true);
+    try {
+      // Parse the query to extract filters
+      const parsed = parseQuery(query);
+      const filters: Record<string, unknown> = {};
+      
+      if (parsed.filters.timeStart) filters.time_start = parsed.filters.timeStart;
+      if (parsed.filters.timeEnd) filters.time_end = parsed.filters.timeEnd;
+      if (parsed.filters.tags?.length) filters.tags = parsed.filters.tags;
+      if (parsed.filters.characters?.length) filters.characters = parsed.filters.characters;
+      if (parsed.filters.motifs?.length) filters.motifs = parsed.filters.motifs;
+
+      // Show detected filters
+      const filterLabels: string[] = [];
+      if (parsed.filters.timeStart || parsed.filters.timeEnd) {
+        filterLabels.push('Time range');
+      }
+      if (parsed.filters.characters?.length) {
+        filterLabels.push(`${parsed.filters.characters.length} character${parsed.filters.characters.length > 1 ? 's' : ''}`);
+      }
+      if (parsed.filters.tags?.length) {
+        filterLabels.push(`${parsed.filters.tags.length} tag${parsed.filters.tags.length > 1 ? 's' : ''}`);
+      }
+      if (parsed.filters.motifs?.length) {
+        filterLabels.push(`${parsed.filters.motifs.length} motif${parsed.filters.motifs.length > 1 ? 's' : ''}`);
+      }
+      setDetectedFilters(filterLabels);
+
+      const response = await fetch('/api/hqi/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: parsed.query, filters })
+      });
+      
+      const payload = await response.json();
+      const results = payload.results ?? [];
+      setSearchResults(results);
+
+      // If results include memoir sections, highlight the first matching section
+      if (results.length > 0) {
+        const firstResult = results[0];
+        if (firstResult.type === 'memoir_section' && firstResult.id) {
+          const sectionId = firstResult.id.replace('section-', '');
+          const matchingSection = sortedSections.find(s => s.id === sectionId);
+          if (matchingSection) {
+            setHighlightedSectionId(sectionId);
+            setSelectedSectionId(sectionId);
+            // Scroll to section after a brief delay
+            setTimeout(() => {
+              const sectionElement = document.querySelector(`[data-section-id="${sectionId}"]`);
+              sectionElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+          }
+        } else if (firstResult.type === 'entry' && firstResult.entryId) {
+          // Find section that contains this entry
+          // This would require checking which section the entry belongs to
+        }
+      }
+    } catch (error) {
+      console.error('Search failed:', error);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSearch();
+    }
+  };
+
+  const handleResultClick = (result: any) => {
+    if (result.type === 'memoir_section' && result.id) {
+      const sectionId = result.id.replace('section-', '');
+      const matchingSection = sortedSections.find(s => s.id === sectionId);
+      if (matchingSection) {
+        setSelectedSectionId(sectionId);
+        setHighlightedSectionId(sectionId);
+        startEditing(matchingSection);
+        setTimeout(() => {
+          const sectionElement = document.querySelector(`[data-section-id="${sectionId}"]`);
+          sectionElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
+    }
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
@@ -776,6 +883,72 @@ export const MemoirEditor = () => {
         </div>
       )}
 
+      {/* Memory Explorer Search Bar */}
+      <div className="px-6 py-4 border-b border-border/50 bg-black/20">
+        <div className="relative">
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/40" />
+              <Input
+                ref={searchInputRef}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                placeholder="Search your memoir... (e.g., 'times I felt overwhelmed last spring', 'entries about Sarah')"
+                className="pl-10 pr-4 py-3 bg-black/60 border-border/50 text-white placeholder:text-white/30 focus:border-primary"
+              />
+            </div>
+            <Button
+              onClick={() => handleSearch()}
+              disabled={searchLoading || !searchQuery.trim()}
+              leftIcon={searchLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+            >
+              {searchLoading ? 'Searching...' : 'Search'}
+            </Button>
+          </div>
+          
+          {/* Detected Filters */}
+          {detectedFilters.length > 0 && (
+            <div className="flex items-center gap-2 mt-3">
+              <span className="text-xs text-white/50">Detected:</span>
+              {detectedFilters.map((filter, idx) => (
+                <Badge key={idx} variant="outline" className="text-xs">
+                  {filter}
+                </Badge>
+              ))}
+            </div>
+          )}
+
+          {/* Search Results Preview */}
+          {searchResults.length > 0 && (
+            <div className="mt-3 space-y-2 max-h-48 overflow-y-auto">
+              {searchResults.slice(0, 5).map((result, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleResultClick(result)}
+                  className="w-full text-left p-2 rounded-lg bg-black/40 border border-border/30 hover:border-primary/50 hover:bg-black/60 transition text-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-primary/70 text-xs uppercase">
+                      {result.type === 'memoir_section' ? 'Section' : result.type === 'entry' ? 'Entry' : result.type}
+                    </span>
+                    <span className="text-white/90 truncate flex-1">{result.title || result.snippet}</span>
+                    {result.relevance && (
+                      <span className="text-xs text-white/50">{Math.round(result.relevance * 100)}%</span>
+                    )}
+                  </div>
+                </button>
+              ))}
+              {searchResults.length > 5 && (
+                <p className="text-xs text-white/50 text-center py-1">
+                  +{searchResults.length - 5} more results
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Outline Editor */}
@@ -818,6 +991,36 @@ export const MemoirEditor = () => {
               sortedSections.map(section => renderSection(section))
             )}
           </div>
+
+          {/* Color-Coded Timeline */}
+          {sortedSections.length > 0 && (
+            <div className="mt-8 border-t border-border/60 pt-6">
+              <ColorCodedTimeline
+                chapters={chapters || []}
+                sections={sortedSections.map(s => ({
+                  id: s.id,
+                  title: s.title,
+                  period: s.period,
+                  order: s.order
+                }))}
+                currentItemId={highlightedSectionId ? `section-${highlightedSectionId}` : selectedSectionId ? `section-${selectedSectionId}` : undefined}
+                onItemClick={(item) => {
+                  if (item.type === 'section' && item.sectionIndex !== undefined) {
+                    const section = sortedSections[item.sectionIndex];
+                    if (section) {
+                      setSelectedSectionId(section.id);
+                      startEditing(section);
+                    }
+                  } else if (item.type === 'chapter' && item.chapterId) {
+                    // Could navigate to chapter view if needed
+                    console.log('Chapter clicked:', item.chapterId);
+                  }
+                }}
+                showLabel={true}
+                sectionIndexMap={new Map(sortedSections.map((s, idx) => [s.id, idx]))}
+              />
+            </div>
+          )}
           </div>
 
           {/* Omega Canon Keeper Panel */}

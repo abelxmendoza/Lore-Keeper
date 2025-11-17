@@ -4,7 +4,6 @@ import { CalendarRange, PenLine, PlusCircle, Search as SearchIcon, Wand2 } from 
 import { AuthGate } from '../components/AuthGate';
 import { AutopilotPanel } from '../components/AutopilotPanel';
 import { AgentPanel } from '../components/AgentPanel';
-import { ChatPanel } from '../components/ChatPanel';
 import { ChaptersList } from '../components/ChaptersList';
 import { ChapterViewer } from '../components/ChapterViewer';
 import { CreateChapterModal } from '../components/CreateChapterModal';
