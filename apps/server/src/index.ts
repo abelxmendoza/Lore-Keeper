@@ -36,6 +36,7 @@ import { autopilotRouter } from './routes/autopilot';
 import { personaRouter } from './routes/persona';
 import { orchestratorRouter } from './routes/orchestrator';
 import { continuityRouter } from './routes/continuity';
+import { githubRouter } from './routes/github';
 
 assertConfig();
 
@@ -77,11 +78,12 @@ apiRouter.use('/tasks', tasksRouter);
 apiRouter.use('/account', accountRouter);
 apiRouter.use('/onboarding', onboardingRouter);
 apiRouter.use('/agents', agentsRouter);
-apiRouter.use('/autopilot', autopilotRouter);
-apiRouter.use('/insights', insightsRouter);
-apiRouter.use('/persona', personaRouter);
-apiRouter.use('/orchestrator', orchestratorRouter);
-apiRouter.use('/continuity', continuityRouter);
+  apiRouter.use('/autopilot', autopilotRouter);
+  apiRouter.use('/insights', insightsRouter);
+  apiRouter.use('/persona', personaRouter);
+  apiRouter.use('/orchestrator', orchestratorRouter);
+  apiRouter.use('/continuity', continuityRouter);
+  apiRouter.use('/github', githubRouter);
 
 app.use('/api', apiRouter);
 
