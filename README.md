@@ -72,6 +72,18 @@ Traditional journals are hard to search, don't connect related events, and can't
 - Relationship mapping (friends, family, colleagues)
 - Character timelines showing their role in your story
 - Knowledge base for each person/place
+- **Enhanced Character Detail Modals**: Comprehensive tabbed interface
+  - **Info**: Edit character details, aliases, pronouns, archetype, role, summary, tags
+  - **Social Media**: Instagram, Twitter/X, Facebook, LinkedIn, GitHub, website, email, phone
+  - **Connections**: Relationship to you, mutual connections, closeness scores
+  - **History**: Shared memories and timeline
+  - **Context**: Character overview, summary, tags
+  - **Timeline**: Visual timeline of shared memories
+  - **Chat**: AI-powered chatbot for character updates
+  - **Insights**: Character stats, relationships count, first appearance
+  - **Metadata**: Technical details and raw data
+- Keyboard shortcuts (Ctrl/Cmd + 1-9) for quick navigation
+- Chat integration for updating character information through conversation
 
 #### 📊 **Omni Timeline**
 - 9-layer hierarchical timeline (Mythos → Epochs → Eras → Sagas → Arcs → Chapters → Scenes → Actions → MicroActions)
@@ -84,7 +96,17 @@ Traditional journals are hard to search, don't connect related events, and can't
 - Natural language search queries
 - Semantic search powered by embeddings
 - Automatic filter detection (dates, characters, tags, motifs)
-- Detailed result modals with context
+- **Enhanced Detail Modals**: Comprehensive tabbed interface for exploring memories
+  - **Overview**: Quick stats, full content, tags, timeline hierarchy, characters
+  - **Context**: Timeline hierarchy details, temporal context (±5 days), chapter context
+  - **Connections**: Characters mentioned and relationships
+  - **Linked Memories**: Grouped by connection type (temporal, tag, chapter, character, source)
+  - **Chat**: AI-powered chatbot for memory enhancement and updates
+  - **Insights**: AI-generated analysis, themes, sentiment, reading time
+  - **Timeline**: Visual timeline centered on memory with related entries
+  - **Metadata**: Technical details, source information, raw JSON viewer
+- Keyboard shortcuts (Ctrl/Cmd + 1-8) for quick navigation
+- Chat integration for updating memories through conversation
 
 #### 📖 **Memoir Editor**
 - Write and edit memoir sections
@@ -92,6 +114,23 @@ Traditional journals are hard to search, don't connect related events, and can't
 - Continuity checking (Omega Canon Keeper)
 - Document upload and processing
 - Section organization and hierarchy
+
+#### 📍 **Location Tracking**
+- Automatic location detection from entries
+- Visit history and frequency tracking
+- People who visited each location
+- Location timelines and memories
+- **Enhanced Location Detail Modals**: Comprehensive tabbed interface
+  - **Overview**: Visit stats, top tags, chapters, moods
+  - **Visits**: Complete visit history with dates, summaries, tags
+  - **People**: People who visited with visit counts
+  - **Context**: Location details, coordinates, visit timeline, sources
+  - **Timeline**: Visual timeline of visits
+  - **Chat**: AI-powered chatbot for location information
+  - **Insights**: Visit patterns, frequency analysis, top tags
+  - **Metadata**: Technical details and raw data
+- Keyboard shortcuts (Ctrl/Cmd + 1-8) for quick navigation
+- Chat integration for location-related queries
 
 #### 📘 **Lore Book (Reading Mode)**
 - Beautiful reading interface with book-like typography
