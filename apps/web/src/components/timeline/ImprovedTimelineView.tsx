@@ -3,6 +3,7 @@ import { Calendar, Filter, Search, ChevronRight, Clock, BookOpen, Tag as TagIcon
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card, CardContent, CardHeader } from '../ui/card';
+import { Badge } from '../ui/badge';
 import { ChaptersList } from '../ChaptersList';
 import { MemoryTimeline } from '../MemoryTimeline';
 import { TaskEnginePanel } from '../TaskEnginePanel';
@@ -483,6 +484,89 @@ export const ImprovedTimelineView = ({
 
       {viewMode === 'chapters' && (
         <div className="space-y-6">
+          {/* Chapter Candidates - Show first if available */}
+          {chapterCandidates.length > 0 && (
+            <Card className="bg-black/40 border-border/60 border-primary/30">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-primary" />
+                      Suggested Chapters
+                    </h3>
+                    <p className="text-sm text-white/60 mt-2">
+                      AI-detected potential chapters from your entries. Click "Create Chapter" to add them.
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {chapterCandidates.map((candidate: any) => (
+                    <div
+                      key={candidate.id}
+                      className="p-4 rounded-lg border border-primary/30 bg-primary/5 hover:border-primary/50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-white mb-1">{candidate.chapter_title || candidate.title}</h4>
+                          {candidate.summary && (
+                            <p className="text-sm text-white/70 mb-2">{candidate.summary}</p>
+                          )}
+                          <div className="flex items-center gap-4 text-xs text-white/50">
+                            <span>
+                              {new Date(candidate.start_date).toLocaleDateString()}
+                              {candidate.end_date && ` - ${new Date(candidate.end_date).toLocaleDateString()}`}
+                            </span>
+                            {candidate.confidence && (
+                              <span className="text-primary/70">
+                                {Math.round(candidate.confidence * 100)}% confidence
+                              </span>
+                            )}
+                            {candidate.entry_ids && (
+                              <span>{candidate.entry_ids.length} entries</span>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              await fetchJson('/api/chapters', {
+                                method: 'POST',
+                                body: JSON.stringify({
+                                  title: candidate.chapter_title || candidate.title,
+                                  startDate: candidate.start_date,
+                                  endDate: candidate.end_date || null,
+                                  description: candidate.summary || null
+                                })
+                              });
+                              onRefreshChapters();
+                            } catch (error) {
+                              console.error('Failed to create chapter:', error);
+                              alert('Failed to create chapter. Please try again.');
+                            }
+                          }}
+                        >
+                          Create Chapter
+                        </Button>
+                      </div>
+                      {candidate.chapter_traits && candidate.chapter_traits.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {candidate.chapter_traits.map((trait: string) => (
+                            <Badge key={trait} variant="outline" className="text-xs border-primary/30 text-primary/70">
+                              {trait}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card className="bg-black/40 border-border/60">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -506,19 +590,6 @@ export const ImprovedTimelineView = ({
               />
             </CardContent>
           </Card>
-          {chapterCandidates.length > 0 && (
-            <Card className="bg-black/40 border-border/60">
-              <CardHeader>
-                <h3 className="text-lg font-semibold">Suggested Chapters</h3>
-                <p className="text-sm text-white/60 mt-2">
-                  AI-detected potential chapters based on your entries
-                </p>
-              </CardHeader>
-              <CardContent>
-                <ChapterViewer chapters={chapters} candidates={chapterCandidates} onRefresh={onRefreshChapters} />
-              </CardContent>
-            </Card>
-          )}
         </div>
       )}
 

@@ -3,15 +3,21 @@ import { fetchJson } from '../lib/api';
 export type FabricNode = {
   id: string;
   label: string;
-  type: 'memory' | 'character' | 'task';
+  type: 'memory' | 'character' | 'task' | 'event';
   group?: string;
+  metadata?: Record<string, unknown>;
 };
 
 export type FabricLink = {
   source: string;
   target: string;
-  relation: 'semantic' | 'temporal' | 'emotional' | 'identity';
+  type: 'semantic' | 'temporal' | 'emotional' | 'identity' | 'co_occurrence';
   weight?: number;
+  relation?: string;
+  firstSeen?: string;
+  lastSeen?: string;
+  recency?: number;
+  context?: Record<string, unknown>;
 };
 
 export type FabricSnapshot = {
@@ -19,4 +25,33 @@ export type FabricSnapshot = {
   links: FabricLink[];
 };
 
-export const fetchFabric = () => fetchJson<{ fabric: FabricSnapshot }>('/api/fabric');
+export type MemoryGraph = {
+  nodes: FabricNode[];
+  edges: FabricLink[];
+};
+
+// Fetch from memory-graph endpoint
+export const fetchFabric = async () => {
+  const response = await fetchJson<{ graph: MemoryGraph }>('/api/memory-graph');
+  // Transform backend format to frontend format
+  return {
+    fabric: {
+      nodes: response.graph.nodes,
+      links: response.graph.edges
+    }
+  };
+};
+
+// Create a link between nodes
+export const createFabricLink = async (link: {
+  source: string;
+  target: string;
+  type?: string;
+  weight?: number;
+  context?: Record<string, unknown>;
+}) => {
+  return fetchJson<{ edge: FabricLink }>('/api/memory-graph/link', {
+    method: 'POST',
+    body: JSON.stringify(link)
+  });
+};

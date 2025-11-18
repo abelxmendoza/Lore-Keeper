@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { X, Calendar, Users, FileText, Tag, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
+import { X, Calendar, Users, FileText, Tag, ChevronLeft, ChevronRight, BookOpen, Edit2, Save } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
+import { Textarea } from '../ui/textarea';
 import { fetchJson } from '../../lib/api';
 import { useLoreKeeper } from '../../hooks/useLoreKeeper';
 
@@ -37,7 +38,12 @@ export const TimelineEntryModal = ({ entryId, isOpen, onClose, onNavigate }: Pro
   const [loading, setLoading] = useState(false);
   const [prevEntryId, setPrevEntryId] = useState<string | null>(null);
   const [nextEntryId, setNextEntryId] = useState<string | null>(null);
-  const { entries, timeline } = useLoreKeeper();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState('');
+  const [editSummary, setEditSummary] = useState('');
+  const [editTags, setEditTags] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const { entries, timeline, refreshEntries, refreshTimeline } = useLoreKeeper();
 
   useEffect(() => {
     if (isOpen && entryId) {
@@ -57,7 +63,7 @@ export const TimelineEntryModal = ({ entryId, isOpen, onClose, onNavigate }: Pro
           ? timeline.chapters.find(c => c.id === entry.chapter_id)
           : null;
 
-        setEntryDetail({
+        const detail: EntryDetail = {
           id: entry.id,
           date: entry.date,
           content: entry.content,
@@ -66,7 +72,11 @@ export const TimelineEntryModal = ({ entryId, isOpen, onClose, onNavigate }: Pro
           mood: entry.mood || undefined,
           chapter_id: entry.chapter_id || undefined,
           chapter_title: chapter?.title
-        });
+        };
+        setEntryDetail(detail);
+        setEditContent(detail.content);
+        setEditSummary(detail.summary || '');
+        setEditTags(detail.tags);
 
         // Find previous and next entries
         const allEntries = timeline.chapters.flatMap(ch => 
@@ -147,6 +157,40 @@ export const TimelineEntryModal = ({ entryId, isOpen, onClose, onNavigate }: Pro
     } catch (error) {
       console.error('Failed to load characters:', error);
     }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!entryDetail || saving) return;
+    
+    setSaving(true);
+    try {
+      const updated = await fetchJson<EntryDetail>(`/api/entries/${entryDetail.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          content: editContent,
+          summary: editSummary || null,
+          tags: editTags
+        })
+      });
+      
+      setEntryDetail(updated);
+      setIsEditing(false);
+      await Promise.all([refreshEntries(), refreshTimeline()]);
+    } catch (error) {
+      console.error('Failed to save entry:', error);
+      alert('Failed to save changes. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    if (entryDetail) {
+      setEditContent(entryDetail.content);
+      setEditSummary(entryDetail.summary || '');
+      setEditTags(entryDetail.tags);
+    }
+    setIsEditing(false);
   };
 
   if (!isOpen) return null;
@@ -251,14 +295,26 @@ export const TimelineEntryModal = ({ entryId, isOpen, onClose, onNavigate }: Pro
               {/* Memory Content */}
               <Card className="bg-black/40 border-border/60">
                 <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-primary" />
-                    <CardTitle>Memory</CardTitle>
-                    {entryDetail?.chapter_title && (
-                      <Badge variant="outline" className="ml-auto border-primary/50 text-primary">
-                        <BookOpen className="h-3 w-3 mr-1" />
-                        {entryDetail.chapter_title}
-                      </Badge>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-primary" />
+                      <CardTitle>Memory</CardTitle>
+                      {entryDetail?.chapter_title && (
+                        <Badge variant="outline" className="ml-2 border-primary/50 text-primary">
+                          <BookOpen className="h-3 w-3 mr-1" />
+                          {entryDetail.chapter_title}
+                        </Badge>
+                      )}
+                    </div>
+                    {entryDetail && !isEditing && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setIsEditing(true)}
+                        leftIcon={<Edit2 className="h-3 w-3" />}
+                      >
+                        Edit
+                      </Button>
                     )}
                   </div>
                 </CardHeader>
@@ -267,32 +323,84 @@ export const TimelineEntryModal = ({ entryId, isOpen, onClose, onNavigate }: Pro
                     <div className="text-center py-8 text-white/60">Loading...</div>
                   ) : entryDetail ? (
                     <>
-                      {entryDetail.summary && (
-                        <div className="p-3 rounded-lg bg-primary/10 border border-primary/30">
-                          <p className="text-sm font-semibold text-primary mb-1">Summary</p>
-                          <p className="text-sm text-white/90">{entryDetail.summary}</p>
+                      {isEditing ? (
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-xs text-white/60 mb-1 block">Summary</label>
+                            <Textarea
+                              value={editSummary}
+                              onChange={(e) => setEditSummary(e.target.value)}
+                              className="bg-black/60 border-border/50 text-white min-h-[80px]"
+                              placeholder="Optional summary..."
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-white/60 mb-1 block">Content</label>
+                            <Textarea
+                              value={editContent}
+                              onChange={(e) => setEditContent(e.target.value)}
+                              className="bg-black/60 border-border/50 text-white min-h-[200px]"
+                              placeholder="Entry content..."
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-white/60 mb-1 block">Tags (comma-separated)</label>
+                            <Textarea
+                              value={editTags.join(', ')}
+                              onChange={(e) => setEditTags(e.target.value.split(',').map(t => t.trim()).filter(Boolean))}
+                              className="bg-black/60 border-border/50 text-white min-h-[60px]"
+                              placeholder="tag1, tag2, tag3..."
+                            />
+                          </div>
+                          <div className="flex gap-2 justify-end">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={handleCancelEdit}
+                              disabled={saving}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={handleSaveEdit}
+                              disabled={saving || !editContent.trim()}
+                              leftIcon={<Save className="h-3 w-3" />}
+                            >
+                              {saving ? 'Saving...' : 'Save'}
+                            </Button>
+                          </div>
                         </div>
-                      )}
-                      <div className="prose prose-invert max-w-none">
-                        <p className="text-white/90 whitespace-pre-wrap leading-relaxed">
-                          {entryDetail.content}
-                        </p>
-                      </div>
-                      {entryDetail.mood && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-white/50">Mood:</span>
-                          <Badge className="bg-purple-500/20 text-purple-200">{entryDetail.mood}</Badge>
-                        </div>
-                      )}
-                      {entryDetail.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {entryDetail.tags.map(tag => (
-                            <Badge key={tag} variant="outline" className="border-primary/50 text-primary">
-                              <Tag className="h-3 w-3 mr-1" />
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
+                      ) : (
+                        <>
+                          {entryDetail.summary && (
+                            <div className="p-3 rounded-lg bg-primary/10 border border-primary/30">
+                              <p className="text-sm font-semibold text-primary mb-1">Summary</p>
+                              <p className="text-sm text-white/90">{entryDetail.summary}</p>
+                            </div>
+                          )}
+                          <div className="prose prose-invert max-w-none">
+                            <p className="text-white/90 whitespace-pre-wrap leading-relaxed">
+                              {entryDetail.content}
+                            </p>
+                          </div>
+                          {entryDetail.mood && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-white/50">Mood:</span>
+                              <Badge className="bg-purple-500/20 text-purple-200">{entryDetail.mood}</Badge>
+                            </div>
+                          )}
+                          {entryDetail.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {entryDetail.tags.map(tag => (
+                                <Badge key={tag} variant="outline" className="border-primary/50 text-primary">
+                                  <Tag className="h-3 w-3 mr-1" />
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </>
                       )}
                     </>
                   ) : (

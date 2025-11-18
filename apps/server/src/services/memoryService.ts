@@ -157,6 +157,61 @@ class MemoryService {
     return data as MemoryEntry;
   }
 
+  async updateEntry(
+    userId: string,
+    entryId: string,
+    updates: Partial<Omit<SaveEntryPayload, 'userId'>>
+  ): Promise<MemoryEntry> {
+    const updateData: Record<string, unknown> = {
+      updated_at: new Date().toISOString()
+    };
+
+    if (updates.content !== undefined) updateData.content = updates.content;
+    if (updates.date !== undefined) updateData.date = updates.date;
+    if (updates.tags !== undefined) updateData.tags = updates.tags;
+    if (updates.chapterId !== undefined) updateData.chapter_id = updates.chapterId;
+    if (updates.mood !== undefined) updateData.mood = updates.mood;
+    if (updates.summary !== undefined) updateData.summary = updates.summary;
+    if (updates.source !== undefined) updateData.source = updates.source;
+    if (updates.metadata !== undefined) {
+      updateData.metadata = { ...updateData.metadata as Record<string, unknown>, ...updates.metadata };
+    }
+    if (updates.relationships !== undefined) {
+      const metadata = (updateData.metadata as Record<string, unknown>) || {};
+      metadata.relationships = updates.relationships;
+      updateData.metadata = metadata;
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('journal_entries')
+      .update(updateData)
+      .eq('id', entryId)
+      .eq('user_id', userId)
+      .select('*')
+      .single();
+
+    if (error) {
+      logger.error({ error }, 'Failed to update entry');
+      throw error;
+    }
+
+    // Update embedding if content changed
+    if (updates.content || updates.summary) {
+      try {
+        const embedding = await embeddingService.embedText(updates.summary ?? updates.content ?? '');
+        await supabaseAdmin
+          .from('journal_entries')
+          .update({ embedding })
+          .eq('id', entryId)
+          .eq('user_id', userId);
+      } catch (error) {
+        logger.warn({ error }, 'Entry updated but embedding update failed');
+      }
+    }
+
+    return data as MemoryEntry;
+  }
+
   async getResolvedEntry(userId: string, entryId: string): Promise<ResolvedMemoryEntry | null> {
     const entry = await this.getEntry(userId, entryId);
     return entry ? correctionService.applyCorrections(entry) : null;

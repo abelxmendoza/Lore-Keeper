@@ -11,6 +11,9 @@ import { ContinuityPanel } from '../ContinuityPanel';
 import { ColorCodedTimeline } from '../timeline/ColorCodedTimeline';
 import { parseQuery } from '../../utils/parseQuery';
 import { Badge } from '../ui/badge';
+import { RichTextEditor } from './RichTextEditor';
+import { MarkdownRenderer } from '../chat/MarkdownRenderer';
+import { ChapterCreationChatbot } from '../chapters/ChapterCreationChatbot';
 
 type MemoirSection = {
   id: string;
@@ -70,12 +73,12 @@ export const MemoirEditor = () => {
   const [searchLoading, setSearchLoading] = useState(false);
   const [detectedFilters, setDetectedFilters] = useState<string[]>([]);
   const [highlightedSectionId, setHighlightedSectionId] = useState<string | null>(null);
+  const [showChapterChatbot, setShowChapterChatbot] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
-  const editorRef = useRef<HTMLTextAreaElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const { refreshTimeline, refreshChapters, entries, refreshEntries, chapters } = useLoreKeeper();
+  const { refreshTimeline, refreshChapters, entries, refreshEntries, chapters, createChapter } = useLoreKeeper();
 
   useEffect(() => {
     loadMemoir();
@@ -286,11 +289,6 @@ export const MemoirEditor = () => {
       }));
       setHistoryIndex(prev => ({ ...prev, [section.id]: 0 }));
     }
-    
-    // Focus editor after a brief delay
-    setTimeout(() => {
-      editorRef.current?.focus();
-    }, 100);
   };
 
   const saveEdit = async () => {
@@ -607,12 +605,15 @@ export const MemoirEditor = () => {
           <div className="p-4">
             {isEditing ? (
               <div className="space-y-3">
-                <Textarea
-                  ref={editorRef}
+                <RichTextEditor
                   value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  className="bg-black/60 border-border/50 text-white min-h-[400px] font-mono text-sm"
-                  placeholder="Edit your memoir section here..."
+                  onChange={setEditContent}
+                  onSave={saveEdit}
+                  placeholder="Edit your memoir section here... Use markdown for formatting."
+                  minHeight="400px"
+                  autoSave={false}
+                  className="w-full"
+                  autoFocus={true}
                 />
                 <div className="flex gap-2 justify-end">
                   <Button size="sm" variant="outline" onClick={cancelEdit}>
@@ -626,11 +627,11 @@ export const MemoirEditor = () => {
             ) : (
               <div className="space-y-3">
                 <div className="prose prose-invert max-w-none">
-                  <p className="text-white/90 whitespace-pre-wrap leading-relaxed text-sm">
-                    {showingOriginal && section.originalContent
+                  <MarkdownRenderer 
+                    content={showingOriginal && section.originalContent
                       ? section.originalContent
-                      : section.content}
-                  </p>
+                      : section.content || '*No content yet*'} 
+                  />
                 </div>
                 {section.isEdited && (
                   <div className="text-xs text-primary/70 flex items-center gap-1">
@@ -867,6 +868,12 @@ export const MemoirEditor = () => {
             {showOutline ? 'Hide' : 'Show'} Outline
           </Button>
           <Button
+            onClick={() => setShowChapterChatbot(true)}
+            leftIcon={<Sparkles className="h-4 w-4" />}
+          >
+            Create Chapter
+          </Button>
+          <Button
             variant={showCanonKeeper ? 'default' : 'outline'}
             onClick={() => setShowCanonKeeper(!showCanonKeeper)}
             leftIcon={<Shield className="h-4 w-4" />}
@@ -1021,9 +1028,18 @@ export const MemoirEditor = () => {
                 <BookOpen className="h-12 w-12 mx-auto mb-4 text-white/20" />
                 <p className="text-lg font-medium mb-2">No sections yet</p>
                 <p className="text-sm mb-4">Generate sections from chats, chapters, or upload a document to get started</p>
-                <Button onClick={() => handleSectionAdd()} leftIcon={<Plus className="h-4 w-4" />}>
-                  Create First Section
-                </Button>
+                <div className="flex gap-3 justify-center">
+                  <Button onClick={() => handleSectionAdd()} leftIcon={<Plus className="h-4 w-4" />}>
+                    Create First Section
+                  </Button>
+                  <Button 
+                    onClick={() => setShowChapterChatbot(true)} 
+                    variant="outline"
+                    leftIcon={<Sparkles className="h-4 w-4" />}
+                  >
+                    Create Chapter
+                  </Button>
+                </div>
               </div>
             ) : (
               sortedSections.map(section => renderSection(section))
@@ -1041,6 +1057,17 @@ export const MemoirEditor = () => {
           )}
         </div>
       </div>
+
+      {/* Chapter Creation Chatbot */}
+      <ChapterCreationChatbot
+        isOpen={showChapterChatbot}
+        onClose={() => setShowChapterChatbot(false)}
+        onCreateChapter={async (payload) => {
+          await createChapter(payload);
+          await Promise.all([refreshEntries(), refreshTimeline(), refreshChapters()]);
+          await loadMemoir(); // Reload memoir to reflect new chapter
+        }}
+      />
     </div>
   );
 };

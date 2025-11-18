@@ -31,6 +31,7 @@ import { ImprovedTimelineView } from '../components/timeline/ImprovedTimelineVie
 import { MemoirEditor } from '../components/memoir/MemoirEditor';
 import { LoreBook } from '../components/lorebook/LoreBook';
 import { PopulateDummyData } from '../components/dev/PopulateDummyData';
+import { ChapterCreationChatbot } from '../components/chapters/ChapterCreationChatbot';
 
 const formatRange = (days = 7) => {
   const end = new Date();
@@ -90,6 +91,8 @@ const AppContent = () => {
   const [persona, setPersona] = useState('The Archivist');
   const [generatingSummary, setGeneratingSummary] = useState(false);
   const [activeSurface, setActiveSurface] = useState<SurfaceKey>('chat');
+  const [insights, setInsights] = useState<any>(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
   const [panelsOpen, setPanelsOpen] = useState({
     identity: false,
     characters: false,
@@ -99,8 +102,22 @@ const AppContent = () => {
     insights: false,
     autopilot: false
   });
+
+  const loadInsights = async () => {
+    setInsightsLoading(true);
+    try {
+      const result = await fetchJson<{ insights?: any }>('/api/insights/recent');
+      setInsights(result.insights || result);
+    } catch (error) {
+      console.error('Failed to load insights:', error);
+      setInsights(null);
+    } finally {
+      setInsightsLoading(false);
+    }
+  };
   const [showDiscovery, setShowDiscovery] = useState(false);
   const [devMode, setDevMode] = useState(false);
+  const [showChapterChatbot, setShowChapterChatbot] = useState(false);
   const discoveryRef = useRef<HTMLDivElement | null>(null);
 
   const handleSummary = async () => {
@@ -152,7 +169,7 @@ const AppContent = () => {
       taskEvents={taskEvents}
       taskBriefing={taskBriefing}
       loading={loading}
-      onCreateChapter={() => setChapterModalOpen(true)}
+      onCreateChapter={() => setShowChapterChatbot(true)}
       onSummarizeChapter={async (chapterId) => {
         await summarizeChapter(chapterId);
         await Promise.all([refreshTimeline(), refreshChapters()]);
@@ -177,7 +194,7 @@ const AppContent = () => {
       <Sidebar
         activeSurface={activeSurface}
         onSurfaceChange={setActiveSurface}
-        onCreateChapter={() => setChapterModalOpen(true)}
+        onCreateChapter={() => setShowChapterChatbot(true)}
         onScrollToDiscovery={() => discoveryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
         onToggleDevMode={() => setDevMode((prev) => !prev)}
         devModeEnabled={devMode}
@@ -258,10 +275,16 @@ const AppContent = () => {
             {(Object.values(panelsOpen).some(Boolean)) && (
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {panelsOpen.identity && <IdentityPulsePanel />}
-                {panelsOpen.characters && <CharacterPage characterId="maya" />}
+                {panelsOpen.characters && <CharacterBook />}
                 {panelsOpen.saga && <SagaScreen />}
                 {panelsOpen.fabric && <MemoryFabricPanel />}
-                {panelsOpen.insights && <InsightsPanel />}
+                {panelsOpen.insights && (
+                  <InsightsPanel
+                    insights={insights}
+                    loading={insightsLoading}
+                    onRefresh={loadInsights}
+                  />
+                )}
                 {panelsOpen.autopilot && <AutopilotPanel />}
               </div>
             )}
@@ -287,13 +310,13 @@ const AppContent = () => {
         )}
 
 
-        <CreateChapterModal
-          open={chapterModalOpen}
-          onClose={() => setChapterModalOpen(false)}
-          onCreate={async (payload) => {
-            const chapter = await createChapter(payload);
-            await Promise.all([refreshTimeline(), refreshChapters()]);
-            return chapter;
+        {/* Chapter Creation Chatbot */}
+        <ChapterCreationChatbot
+          isOpen={showChapterChatbot}
+          onClose={() => setShowChapterChatbot(false)}
+          onCreateChapter={async (payload) => {
+            await createChapter(payload);
+            await Promise.all([refreshEntries(), refreshTimeline(), refreshChapters()]);
           }}
         />
       </main>

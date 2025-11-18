@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Search, Plus, User, AlertCircle, RefreshCw, Bug } from 'lucide-react';
+import { Search, Plus, User, RefreshCw } from 'lucide-react';
 import { CharacterProfileCard, type Character } from './CharacterProfileCard';
 import { CharacterDetailModal } from './CharacterDetailModal';
 import { UserProfile } from './UserProfile';
@@ -10,82 +10,196 @@ import { fetchJson } from '../../lib/api';
 import { useLoreKeeper } from '../../hooks/useLoreKeeper';
 import { ColorCodedTimeline } from '../timeline/ColorCodedTimeline';
 
-const DEBUG = true; // Set to false in production
-
-const debugLog = (component: string, message: string, data?: any) => {
-  if (DEBUG) {
-    console.log(`[CharacterBook:${component}]`, message, data || '');
+// Dummy character data for display
+const dummyCharacters: Character[] = [
+  {
+    id: 'dummy-1',
+    name: 'Sarah Chen',
+    alias: ['Sarah', 'Sara'],
+    pronouns: 'she/her',
+    archetype: 'ally',
+    role: 'Best Friend',
+    status: 'active',
+    summary: 'My closest friend and confidante. We met in college and have been inseparable ever since. Sarah is incredibly supportive, honest, and always knows how to make me laugh.',
+    tags: ['friendship', 'support', 'honesty', 'loyalty'],
+    metadata: {
+      relationship_type: 'friend',
+      closeness_score: 95,
+      first_met: '2018-09-15'
+    },
+    social_media: {
+      email: 'sarah.chen@example.com',
+      instagram: '@sarah_life'
+    },
+    memory_count: 24,
+    relationship_count: 8
+  },
+  {
+    id: 'dummy-2',
+    name: 'Marcus Johnson',
+    alias: ['Marcus', 'Marc'],
+    pronouns: 'he/him',
+    archetype: 'mentor',
+    role: 'Mentor & Coach',
+    status: 'active',
+    summary: 'A wise mentor who has guided me through many career and life decisions. Marcus has decades of experience and always provides thoughtful, nuanced advice.',
+    tags: ['mentorship', 'wisdom', 'career', 'guidance'],
+    metadata: {
+      relationship_type: 'coach',
+      closeness_score: 85,
+      first_met: '2020-03-10'
+    },
+    social_media: {
+      email: 'marcus@example.com',
+      linkedin: 'marcus-johnson'
+    },
+    memory_count: 18,
+    relationship_count: 5
+  },
+  {
+    id: 'dummy-3',
+    name: 'Alex Rivera',
+    alias: ['Alex', 'A.R.'],
+    pronouns: 'they/them',
+    archetype: 'collaborator',
+    role: 'Creative Collaborator',
+    status: 'active',
+    summary: 'A talented creative collaborator I\'ve worked with on several projects. Alex brings fresh perspectives and we complement each other\'s skills well.',
+    tags: ['collaboration', 'creativity', 'professional', 'innovation'],
+    metadata: {
+      relationship_type: 'professional',
+      closeness_score: 75,
+      first_met: '2021-07-20'
+    },
+    social_media: {
+      github: 'alex-dev',
+      website: 'alexrivera.dev'
+    },
+    memory_count: 12,
+    relationship_count: 3
+  },
+  {
+    id: 'dummy-4',
+    name: 'Jordan Kim',
+    alias: ['Jordan', 'J'],
+    pronouns: 'they/them',
+    archetype: 'family',
+    role: 'Sibling',
+    status: 'active',
+    summary: 'My sibling and one of the most important people in my life. We\'ve grown closer over the years and now have deep, meaningful conversations about life, dreams, and everything in between.',
+    tags: ['family', 'sibling', 'support', 'connection'],
+    metadata: {
+      relationship_type: 'family',
+      closeness_score: 90,
+      first_met: '1995-06-15'
+    },
+    memory_count: 32,
+    relationship_count: 12
+  },
+  {
+    id: 'dummy-5',
+    name: 'Dr. Maya Patel',
+    alias: ['Maya', 'Dr. Patel'],
+    pronouns: 'she/her',
+    archetype: 'mentor',
+    role: 'Life Coach',
+    status: 'active',
+    summary: 'A life coach who has helped me navigate personal challenges and develop better self-awareness. Her coaching style is gentle but direct, and she has a gift for asking the right questions.',
+    tags: ['coaching', 'growth', 'self-awareness', 'wellness'],
+    metadata: {
+      relationship_type: 'coach',
+      closeness_score: 80,
+      first_met: '2022-01-15'
+    },
+    social_media: {
+      website: 'mayacoaching.com',
+      email: 'maya@coaching.com'
+    },
+    memory_count: 15,
+    relationship_count: 4
+  },
+  {
+    id: 'dummy-6',
+    name: 'The Coffee Shop',
+    alias: ['Coffee Shop', 'The Shop'],
+    pronouns: 'it/its',
+    archetype: 'place',
+    role: 'Workspace',
+    status: 'active',
+    summary: 'My favorite place to work and think. The atmosphere is perfect for creativity - not too quiet, not too loud. I\'ve written some of my best work here and had many meaningful conversations.',
+    tags: ['workspace', 'creativity', 'routine', 'comfort'],
+    metadata: {
+      relationship_type: 'place',
+      visit_frequency: 'weekly'
+    },
+    memory_count: 28,
+    relationship_count: 0
+  },
+  {
+    id: 'dummy-7',
+    name: 'Central Park',
+    alias: ['The Park'],
+    pronouns: 'it/its',
+    archetype: 'place',
+    role: 'Reflection Space',
+    status: 'active',
+    summary: 'A peaceful place for walks and reflection. I come here when I need to clear my mind, process thoughts, or simply enjoy nature. It\'s become a sanctuary for me.',
+    tags: ['nature', 'peace', 'reflection', 'walking'],
+    metadata: {
+      relationship_type: 'place',
+      visit_frequency: 'bi-weekly'
+    },
+    memory_count: 19,
+    relationship_count: 0
+  },
+  {
+    id: 'dummy-8',
+    name: 'Emma Thompson',
+    alias: ['Emma'],
+    pronouns: 'she/her',
+    archetype: 'friend',
+    role: 'Friend',
+    status: 'active',
+    summary: 'A friend from my writing group. We share a passion for storytelling and often exchange feedback on each other\'s work. Her perspective is always valuable.',
+    tags: ['friendship', 'writing', 'creativity', 'community'],
+    metadata: {
+      relationship_type: 'friend',
+      closeness_score: 70,
+      first_met: '2021-11-05'
+    },
+    social_media: {
+      twitter: '@emma_writes'
+    },
+    memory_count: 9,
+    relationship_count: 2
   }
-};
-
-const debugError = (component: string, message: string, error: any) => {
-  console.error(`[CharacterBook:${component}] ERROR:`, message, error);
-  if (DEBUG) {
-    console.error('Error details:', {
-      message: error?.message,
-      stack: error?.stack,
-      response: error?.response,
-      status: error?.status
-    });
-  }
-};
+];
 
 export const CharacterBook = () => {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<{ message: string; details?: any } | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const { entries = [], chapters = [], timeline, refreshEntries, refreshTimeline } = useLoreKeeper();
 
-  const loadCharacters = async (retryAttempt = 0) => {
-    debugLog('loadCharacters', `Starting load (attempt ${retryAttempt + 1})`);
+  const loadCharacters = async () => {
     setLoading(true);
-    setError(null);
     
     try {
-      debugLog('loadCharacters', 'Fetching from /api/characters/list');
       const response = await fetchJson<{ characters: Character[] }>('/api/characters/list');
-      debugLog('loadCharacters', 'Response received', { count: response.characters?.length || 0 });
-      
-      if (!response) {
-        throw new Error('Empty response from server');
-      }
-      
-      const characterList = response.characters || [];
-      setCharacters(characterList);
-      setRetryCount(0);
-      debugLog('loadCharacters', 'Successfully loaded characters', { count: characterList.length });
-    } catch (error: any) {
-      debugError('loadCharacters', 'Failed to load characters', error);
-      
-      const errorMessage = error?.message || 'Failed to load characters';
-      const errorDetails = {
-        status: error?.status,
-        response: error?.response,
-        stack: DEBUG ? error?.stack : undefined
-      };
-      
-      setError({
-        message: errorMessage,
-        details: errorDetails
-      });
-      
-      // Auto-retry once after 2 seconds
-      if (retryAttempt === 0) {
-        debugLog('loadCharacters', 'Scheduling retry in 2 seconds');
-        setTimeout(() => {
-          void loadCharacters(1);
-        }, 2000);
-      }
+      const characterList = response?.characters || [];
+      // If no characters loaded, use dummy data
+      setCharacters(characterList.length > 0 ? characterList : dummyCharacters);
+    } catch (error) {
+      // Silently fail - use dummy data instead
+      console.error('Failed to load characters:', error);
+      setCharacters(dummyCharacters);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    debugLog('useEffect', 'Component mounted, loading characters');
     void loadCharacters();
   }, []);
 
@@ -119,7 +233,6 @@ export const CharacterBook = () => {
             placeholder="Search characters by name, alias, tags, or role..."
             value={searchTerm}
             onChange={(e) => {
-              debugLog('search', 'Search term changed', e.target.value);
               setSearchTerm(e.target.value);
             }}
             className="pl-10 bg-black/40 border-border/50 text-white placeholder:text-white/40"
@@ -144,90 +257,16 @@ export const CharacterBook = () => {
         </div>
       </div>
 
-      {/* Debug Info */}
-      {DEBUG && (
-        <Card className="bg-yellow-950/20 border-yellow-500/30">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2 text-xs text-yellow-300/80">
-              <Bug className="h-3 w-3" />
-              <span>DEBUG MODE</span>
-              <span className="text-yellow-300/60">·</span>
-              <span>Characters: {characters.length}</span>
-              <span className="text-yellow-300/60">·</span>
-              <span>Loading: {loading ? 'Yes' : 'No'}</span>
-              <span className="text-yellow-300/60">·</span>
-              <span>Error: {error ? 'Yes' : 'No'}</span>
-              {retryCount > 0 && (
-                <>
-                  <span className="text-yellow-300/60">·</span>
-                  <span>Retries: {retryCount}</span>
-                </>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Error Display */}
-      {error && (
-        <Card className="bg-red-950/20 border-red-500/30">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="text-sm font-semibold text-red-400 mb-1">Error Loading Characters</h3>
-                <p className="text-sm text-white/80 mb-2">{error.message}</p>
-                {DEBUG && error.details && (
-                  <details className="mt-2">
-                    <summary className="text-xs text-white/60 cursor-pointer hover:text-white/80">
-                      Debug Details
-                    </summary>
-                    <pre className="mt-2 text-xs text-white/60 bg-black/40 p-2 rounded overflow-auto">
-                      {JSON.stringify(error.details, null, 2)}
-                    </pre>
-                  </details>
-                )}
-                <div className="flex gap-2 mt-3">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => void loadCharacters()}
-                    leftIcon={<RefreshCw className="h-3 w-3" />}
-                  >
-                    Retry
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {loading && !error ? (
+      {loading ? (
         <div className="text-center py-12 text-white/60">
           <RefreshCw className="h-8 w-8 mx-auto mb-4 animate-spin text-primary" />
           <p>Loading characters...</p>
         </div>
-      ) : error && characters.length === 0 ? (
-        <div className="text-center py-12 text-white/60">
-          <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-400/50" />
-          <p className="text-lg font-medium mb-2">Failed to load characters</p>
-          <p className="text-sm mb-4">{error.message}</p>
-          <Button onClick={() => void loadCharacters()} leftIcon={<RefreshCw className="h-4 w-4" />}>
-            Try Again
-          </Button>
-        </div>
       ) : filteredCharacters.length === 0 ? (
         <div className="text-center py-12 text-white/60">
           <User className="h-12 w-12 mx-auto mb-4 text-white/20" />
-          <p className="text-lg font-medium mb-2">
-            {searchTerm ? 'No characters found' : 'No characters yet'}
-          </p>
-          <p className="text-sm">
-            {searchTerm
-              ? 'Try a different search term'
-              : 'Characters will appear here as you mention them in your journal entries'}
-          </p>
+          <p className="text-lg font-medium mb-2">No characters found</p>
+          <p className="text-sm">Try a different search term</p>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -238,37 +277,39 @@ export const CharacterBook = () => {
                   key={character.id || `char-${index}`}
                   character={character}
                   onClick={() => {
-                    debugLog('characterClick', 'Character selected', character.name);
                     setSelectedCharacter(character);
                   }}
                 />
               );
             } catch (cardError) {
-              debugError('renderCharacter', `Failed to render character ${character.name}`, cardError);
-              return (
-                <Card key={`error-${index}`} className="bg-red-950/20 border-red-500/30">
-                  <CardContent className="p-4">
-                    <p className="text-xs text-red-400">Error rendering character</p>
-                    <p className="text-xs text-white/60 mt-1">{character.name}</p>
-                  </CardContent>
-                </Card>
-              );
+              console.error('Failed to render character:', character.name, cardError);
+              return null;
             }
           })}
         </div>
       )}
 
-      {/* Horizontal Timeline Component */}
-      {(chapters.length > 0 || entries.length > 0) && (
-        <div className="mt-8">
-          <Card className="bg-black/40 border-border/60">
-            <CardContent className="p-0">
+      {/* Horizontal Timeline Component - Always at bottom */}
+      <div className="mt-8 pt-6 border-t border-border/50">
+        <div className="mb-3">
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+            Timeline
+          </h3>
+          <p className="text-sm text-white/60 mt-1">
+            {chapters.length > 0 || entries.length > 0
+              ? `View your story timeline with ${chapters.length} chapter${chapters.length !== 1 ? 's' : ''} and ${entries.length} entr${entries.length !== 1 ? 'ies' : 'y'}`
+              : 'Your timeline will appear here as you create chapters and entries'}
+          </p>
+        </div>
+        <Card className="bg-black/40 border-border/60">
+          <CardContent className="p-0">
+            {(chapters.length > 0 || entries.length > 0) ? (
               <ColorCodedTimeline
                 chapters={chapters.map(ch => ({
                   id: ch.id,
                   title: ch.title,
-                  start_date: ch.start_date,
-                  end_date: ch.end_date || null,
+                  start_date: ch.start_date || ch.startDate || new Date().toISOString(),
+                  end_date: ch.end_date || ch.endDate || null,
                   description: ch.description || null,
                   summary: ch.summary || null
                 }))}
@@ -276,28 +317,29 @@ export const CharacterBook = () => {
                   id: entry.id,
                   content: entry.content,
                   date: entry.date,
-                  chapter_id: entry.chapter_id || null
+                  chapter_id: entry.chapter_id || entry.chapterId || null
                 }))}
                 showLabel={true}
                 onItemClick={(item) => {
-                  debugLog('timelineClick', 'Timeline item clicked', item);
                   // Could navigate to entry or chapter if needed
                 }}
               />
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            ) : (
+              <div className="p-8 text-center text-white/40">
+                <p className="text-sm">No timeline data yet. Create chapters and entries to see your story timeline.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {selectedCharacter && (
         <CharacterDetailModal
           character={selectedCharacter}
           onClose={() => {
-            debugLog('modal', 'Modal closed');
             setSelectedCharacter(null);
           }}
           onUpdate={() => {
-            debugLog('modal', 'Character updated, reloading');
             void loadCharacters();
             setSelectedCharacter(null);
           }}

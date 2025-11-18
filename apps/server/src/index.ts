@@ -52,6 +52,9 @@ import healthRouter from './routes/health';
 import { timeRouter } from './routes/time';
 import { errorHandler } from './middleware/errorHandler';
 import { asyncHandler } from './middleware/errorHandler';
+import { requestIdMiddleware } from './utils/requestId';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger';
 
 assertConfig();
 
@@ -65,6 +68,15 @@ app.use(
 );
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
+
+// Request ID middleware (must be early in the chain)
+app.use(requestIdMiddleware);
+
+// Swagger API documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Lore Keeper API Documentation',
+}));
 
 // Health check routes (no auth required)
 app.use('/', healthRouter);

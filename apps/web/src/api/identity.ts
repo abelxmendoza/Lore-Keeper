@@ -8,4 +8,4 @@ export type IdentityPulse = {
   driftWarnings: string[];
 };
 
-export const fetchIdentityPulse = () => fetchJson<{ pulse: IdentityPulse }>('/api/identity/pulse');
+export const fetchIdentityPulse = () => fetchJson<{ pulse: IdentityPulse }>('/api/persona/pulse');

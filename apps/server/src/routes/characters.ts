@@ -32,6 +32,29 @@ const updateCharacterSchema = z.object({
   metadata: z.record(z.unknown()).optional()
 });
 
+/**
+ * @swagger
+ * /api/characters/list:
+ *   get:
+ *     summary: List all characters
+ *     tags: [Characters]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of characters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 characters:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Character'
+ *       500:
+ *         description: Server error
+ */
 router.get('/list', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
     // Try to get from characters table first (new system)
