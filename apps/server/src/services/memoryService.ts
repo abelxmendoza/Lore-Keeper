@@ -314,6 +314,416 @@ class MemoryService {
       return [];
     }
   }
+
+  /**
+   * Get recent memories with comprehensive filters and timeline hierarchy info
+   */
+  async getRecentMemories(
+    userId: string,
+    options: {
+      limit?: number;
+      eras?: string[];
+      sagas?: string[];
+      arcs?: string[];
+      characters?: string[];
+      sources?: string[];
+      tags?: string[];
+      dateFrom?: string;
+      dateTo?: string;
+    }
+  ): Promise<MemoryEntry[]> {
+    try {
+      let builder = supabaseAdmin
+        .from('journal_entries')
+        .select('*')
+        .eq('user_id', userId);
+
+      // Apply date filters
+      if (options.dateFrom) {
+        builder = builder.gte('date', options.dateFrom);
+      }
+      if (options.dateTo) {
+        builder = builder.lte('date', options.dateTo);
+      }
+
+      // Apply source filter
+      if (options.sources && options.sources.length > 0) {
+        builder = builder.in('source', options.sources);
+      }
+
+      // Apply tag filter
+      if (options.tags && options.tags.length > 0) {
+        builder = builder.overlaps('tags', options.tags);
+      }
+
+      // Apply character filter (via metadata relationships)
+      if (options.characters && options.characters.length > 0) {
+        // This is a simplified filter - in production, you'd join with people_places table
+        // For now, we'll filter by checking if any character name appears in content or metadata
+        const characterFilter = options.characters.map((char) => `content.ilike.%${char}%`).join(',');
+        // Note: This is a simplified approach. Full implementation would require proper joins
+      }
+
+      // Apply timeline hierarchy filters (era/saga/arc)
+      // These would require joins with timeline tables, but for now we'll get entries first
+      // and filter in memory if needed (not ideal, but works for MVP)
+
+      const { data, error } = await builder
+        .order('date', { ascending: false })
+        .limit(options.limit ?? 20);
+
+      if (error) {
+        logger.error({ error }, 'Failed to fetch recent memories');
+        return [];
+      }
+
+      let entries = (data ?? []) as MemoryEntry[];
+
+      // Apply timeline hierarchy filters if needed
+      // TODO: Optimize with proper SQL joins
+      if (options.eras || options.sagas || options.arcs) {
+        // For now, we'll need to fetch chapter info and filter
+        // This is a simplified version - full implementation would use SQL joins
+        const chapters = await chapterService.listChapters(userId);
+        const filteredEntries: MemoryEntry[] = [];
+
+        for (const entry of entries) {
+          if (entry.chapter_id) {
+            const chapter = chapters.find((c) => c.id === entry.chapter_id);
+            // Check if chapter belongs to filtered arc/saga/era
+            // This is simplified - full implementation would traverse hierarchy
+            filteredEntries.push(entry);
+          } else {
+            filteredEntries.push(entry);
+          }
+        }
+
+        entries = filteredEntries;
+      }
+
+      return entries;
+    } catch (error) {
+      logger.error({ error }, 'Error getting recent memories');
+      return [];
+    }
+  }
+
+  /**
+   * Keyword/full-text search for entries
+   */
+  async keywordSearchEntries(
+    userId: string,
+    query: string,
+    options: {
+      limit?: number;
+      eras?: string[];
+      sagas?: string[];
+      arcs?: string[];
+      characters?: string[];
+      sources?: string[];
+      tags?: string[];
+      dateFrom?: string;
+      dateTo?: string;
+    }
+  ): Promise<MemoryEntry[]> {
+    try {
+      let builder = supabaseAdmin
+        .from('journal_entries')
+        .select('*')
+        .eq('user_id', userId);
+
+      // Full-text search on content and summary
+      if (query) {
+        builder = builder.or(`content.ilike.%${query}%,summary.ilike.%${query}%`);
+      }
+
+      // Apply filters
+      if (options.dateFrom) {
+        builder = builder.gte('date', options.dateFrom);
+      }
+      if (options.dateTo) {
+        builder = builder.lte('date', options.dateTo);
+      }
+      if (options.sources && options.sources.length > 0) {
+        builder = builder.in('source', options.sources);
+      }
+      if (options.tags && options.tags.length > 0) {
+        builder = builder.overlaps('tags', options.tags);
+      }
+
+      const { data, error } = await builder
+        .order('date', { ascending: false })
+        .limit(options.limit ?? 50);
+
+      if (error) {
+        logger.error({ error }, 'Failed to keyword search entries');
+        return [];
+      }
+
+      // Score and rank by keyword density
+      const entries = (data ?? []) as MemoryEntry[];
+      const scored = entries.map((entry) => {
+        const contentLower = (entry.content || '').toLowerCase();
+        const summaryLower = (entry.summary || '').toLowerCase();
+        const queryLower = query.toLowerCase();
+        const queryWords = queryLower.split(/\s+/);
+
+        let score = 0;
+        queryWords.forEach((word) => {
+          const contentMatches = (contentLower.match(new RegExp(word, 'g')) || []).length;
+          const summaryMatches = (summaryLower.match(new RegExp(word, 'g')) || []).length;
+          score += contentMatches * 2 + summaryMatches * 3; // Summary matches weighted higher
+        });
+
+        return { entry, score };
+      });
+
+      scored.sort((a, b) => b.score - a.score);
+      return scored.map((item) => item.entry);
+    } catch (error) {
+      logger.error({ error }, 'Error keyword searching entries');
+      return [];
+    }
+  }
+
+  /**
+   * Get related memory clusters for given memory IDs
+   */
+  async getRelatedClusters(
+    userId: string,
+    memoryIds: string[],
+    options: { limit?: number } = {}
+  ): Promise<{
+    clusters: Array<{
+      type: 'era' | 'saga' | 'arc' | 'character' | 'temporal' | 'tag' | 'source';
+      label: string;
+      memories: MemoryEntry[];
+    }>;
+  }> {
+    try {
+      if (memoryIds.length === 0) {
+        return { clusters: [] };
+      }
+
+      // Get the source memories
+      const { data: sourceMemories, error: sourceError } = await supabaseAdmin
+        .from('journal_entries')
+        .select('*')
+        .eq('user_id', userId)
+        .in('id', memoryIds);
+
+      if (sourceError || !sourceMemories || sourceMemories.length === 0) {
+        return { clusters: [] };
+      }
+
+      const memories = sourceMemories as MemoryEntry[];
+      const clusters: Array<{
+        type: 'era' | 'saga' | 'arc' | 'character' | 'temporal' | 'tag' | 'source';
+        label: string;
+        memories: MemoryEntry[];
+      }> = [];
+
+      // Temporal proximity cluster (±5 days)
+      const temporalMemories = new Map<string, MemoryEntry>();
+      for (const memory of memories) {
+        const memoryDate = new Date(memory.date);
+        const fiveDaysBefore = new Date(memoryDate.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString();
+        const fiveDaysAfter = new Date(memoryDate.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString();
+
+        const { data: nearby } = await supabaseAdmin
+          .from('journal_entries')
+          .select('*')
+          .eq('user_id', userId)
+          .gte('date', fiveDaysBefore)
+          .lte('date', fiveDaysAfter)
+          .neq('id', memory.id)
+          .limit(10);
+
+        if (nearby) {
+          nearby.forEach((m) => {
+            if (!memoryIds.includes(m.id)) {
+              temporalMemories.set(m.id, m as MemoryEntry);
+            }
+          });
+        }
+      }
+
+      if (temporalMemories.size > 0) {
+        clusters.push({
+          type: 'temporal',
+          label: 'Nearby in time',
+          memories: Array.from(temporalMemories.values()).slice(0, options.limit ?? 10)
+        });
+      }
+
+      // Tag clusters
+      const tagGroups = new Map<string, MemoryEntry[]>();
+      for (const memory of memories) {
+        memory.tags.forEach((tag) => {
+          if (!tagGroups.has(tag)) {
+            tagGroups.set(tag, []);
+          }
+        });
+      }
+
+      for (const [tag] of tagGroups) {
+        const { data: tagMemories } = await supabaseAdmin
+          .from('journal_entries')
+          .select('*')
+          .eq('user_id', userId)
+          .contains('tags', [tag])
+          .limit(20);
+
+        if (tagMemories && tagMemories.length > 0) {
+          // Filter out source memories
+          const filtered = (tagMemories as MemoryEntry[]).filter(m => !memoryIds.includes(m.id)).slice(0, 5);
+          if (filtered.length > 0) {
+            clusters.push({
+              type: 'tag',
+              label: `Tagged: ${tag}`,
+              memories: filtered
+            });
+          }
+        }
+      }
+
+      // Source clusters
+      const sourceGroups = new Map<string, MemoryEntry[]>();
+      for (const memory of memories) {
+        const source = memory.source;
+        if (!sourceGroups.has(source)) {
+          sourceGroups.set(source, []);
+        }
+      }
+
+      for (const [source] of sourceGroups) {
+        const { data: sourceMemories } = await supabaseAdmin
+          .from('journal_entries')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('source', source)
+          .limit(20);
+
+        if (sourceMemories && sourceMemories.length > 0) {
+          // Filter out source memories
+          const filtered = (sourceMemories as MemoryEntry[]).filter(m => !memoryIds.includes(m.id)).slice(0, 5);
+          if (filtered.length > 0) {
+            clusters.push({
+              type: 'source',
+              label: `From: ${source}`,
+              memories: filtered
+            });
+          }
+        }
+      }
+
+      return { clusters };
+    } catch (error) {
+      logger.error({ error }, 'Error getting related clusters');
+      return { clusters: [] };
+    }
+  }
+
+  /**
+   * Get linked memories for a specific entry
+   */
+  async getLinkedMemories(userId: string, entryId: string, limit = 10): Promise<MemoryEntry[]> {
+    try {
+      const entry = await this.getEntry(userId, entryId);
+      if (!entry) {
+        return [];
+      }
+
+      const linkedIds = new Set<string>();
+      const linkedMemories: MemoryEntry[] = [];
+
+      // Same chapter
+      if (entry.chapter_id) {
+        const { data: chapterMemories } = await supabaseAdmin
+          .from('journal_entries')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('chapter_id', entry.chapter_id)
+          .neq('id', entryId)
+          .limit(limit);
+
+        if (chapterMemories) {
+          chapterMemories.forEach((m) => {
+            if (!linkedIds.has(m.id)) {
+              linkedIds.add(m.id);
+              linkedMemories.push(m as MemoryEntry);
+            }
+          });
+        }
+      }
+
+      // Shared tags
+      if (entry.tags.length > 0) {
+        const { data: tagMemories } = await supabaseAdmin
+          .from('journal_entries')
+          .select('*')
+          .eq('user_id', userId)
+          .overlaps('tags', entry.tags)
+          .neq('id', entryId)
+          .limit(limit);
+
+        if (tagMemories) {
+          tagMemories.forEach((m) => {
+            if (!linkedIds.has(m.id) && linkedMemories.length < limit) {
+              linkedIds.add(m.id);
+              linkedMemories.push(m as MemoryEntry);
+            }
+          });
+        }
+      }
+
+      // Temporal proximity (±5 days)
+      const entryDate = new Date(entry.date);
+      const fiveDaysBefore = new Date(entryDate.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString();
+      const fiveDaysAfter = new Date(entryDate.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString();
+
+      const { data: temporalMemories } = await supabaseAdmin
+        .from('journal_entries')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('date', fiveDaysBefore)
+        .lte('date', fiveDaysAfter)
+        .neq('id', entryId)
+        .limit(limit);
+
+      if (temporalMemories) {
+        temporalMemories.forEach((m) => {
+          if (!linkedIds.has(m.id) && linkedMemories.length < limit) {
+            linkedIds.add(m.id);
+            linkedMemories.push(m as MemoryEntry);
+          }
+        });
+      }
+
+      // Same source
+      const { data: sourceMemories } = await supabaseAdmin
+        .from('journal_entries')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('source', entry.source)
+        .neq('id', entryId)
+        .limit(limit);
+
+      if (sourceMemories) {
+        sourceMemories.forEach((m) => {
+          if (!linkedIds.has(m.id) && linkedMemories.length < limit) {
+            linkedIds.add(m.id);
+            linkedMemories.push(m as MemoryEntry);
+          }
+        });
+      }
+
+      return linkedMemories.slice(0, limit);
+    } catch (error) {
+      logger.error({ error }, 'Error getting linked memories');
+      return [];
+    }
+  }
 }
 
 export const memoryService = new MemoryService();

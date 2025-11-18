@@ -318,4 +318,150 @@ router.post('/voice', requireAuth, upload.single('audio'), async (req: Authentic
   res.status(201).json({ entry, transcript, formatted });
 });
 
+/**
+ * @swagger
+ * /api/entries/recent:
+ *   get:
+ *     summary: Get recent memories with filters
+ *     tags: [Entries]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *       - in: query
+ *         name: eras
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *       - in: query
+ *         name: sagas
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *       - in: query
+ *         name: arcs
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *       - in: query
+ *         name: sources
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *       - in: query
+ *         name: tags
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *       - in: query
+ *         name: dateFrom
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: dateTo
+ *         schema:
+ *           type: string
+ *           format: date-time
+ */
+router.get('/recent', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const entries = await memoryService.getRecentMemories(req.user!.id, {
+      limit: req.query.limit ? Number(req.query.limit) : 20,
+      eras: req.query.eras ? (Array.isArray(req.query.eras) ? req.query.eras as string[] : [req.query.eras as string]) : undefined,
+      sagas: req.query.sagas ? (Array.isArray(req.query.sagas) ? req.query.sagas as string[] : [req.query.sagas as string]) : undefined,
+      arcs: req.query.arcs ? (Array.isArray(req.query.arcs) ? req.query.arcs as string[] : [req.query.arcs as string]) : undefined,
+      sources: req.query.sources ? (Array.isArray(req.query.sources) ? req.query.sources as string[] : [req.query.sources as string]) : undefined,
+      tags: req.query.tags ? (Array.isArray(req.query.tags) ? req.query.tags as string[] : [req.query.tags as string]) : undefined,
+      dateFrom: req.query.dateFrom as string | undefined,
+      dateTo: req.query.dateTo as string | undefined
+    });
+    res.json({ entries });
+  } catch (error) {
+    logger.error({ error }, 'Error fetching recent memories');
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to fetch recent memories' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/entries/search/keyword:
+ *   get:
+ *     summary: Keyword/full-text search for entries
+ *     tags: [Entries]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get('/search/keyword', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const query = (req.query.query as string) || '';
+    const entries = await memoryService.keywordSearchEntries(req.user!.id, query, {
+      limit: req.query.limit ? Number(req.query.limit) : 50,
+      eras: req.query.eras ? (Array.isArray(req.query.eras) ? req.query.eras as string[] : [req.query.eras as string]) : undefined,
+      sagas: req.query.sagas ? (Array.isArray(req.query.sagas) ? req.query.sagas as string[] : [req.query.sagas as string]) : undefined,
+      arcs: req.query.arcs ? (Array.isArray(req.query.arcs) ? req.query.arcs as string[] : [req.query.arcs as string]) : undefined,
+      sources: req.query.sources ? (Array.isArray(req.query.sources) ? req.query.sources as string[] : [req.query.sources as string]) : undefined,
+      tags: req.query.tags ? (Array.isArray(req.query.tags) ? req.query.tags as string[] : [req.query.tags as string]) : undefined,
+      dateFrom: req.query.dateFrom as string | undefined,
+      dateTo: req.query.dateTo as string | undefined
+    });
+    res.json({ entries });
+  } catch (error) {
+    logger.error({ error }, 'Error keyword searching entries');
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to search entries' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/entries/clusters:
+ *   post:
+ *     summary: Get related memory clusters
+ *     tags: [Entries]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.post('/clusters', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { memoryIds, limit } = req.body;
+    if (!Array.isArray(memoryIds)) {
+      return res.status(400).json({ error: 'memoryIds must be an array' });
+    }
+    const result = await memoryService.getRelatedClusters(req.user!.id, memoryIds, { limit: limit || 10 });
+    res.json(result);
+  } catch (error) {
+    logger.error({ error }, 'Error getting related clusters');
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to get clusters' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/entries/:id/linked:
+ *   get:
+ *     summary: Get linked memories for a specific entry
+ *     tags: [Entries]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get('/:id/linked', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const limit = req.query.limit ? Number(req.query.limit) : 10;
+    const entries = await memoryService.getLinkedMemories(req.user!.id, req.params.id, limit);
+    res.json({ entries });
+  } catch (error) {
+    logger.error({ error }, 'Error fetching linked memories');
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to fetch linked memories' });
+  }
+});
+
 export const entriesRouter = router;

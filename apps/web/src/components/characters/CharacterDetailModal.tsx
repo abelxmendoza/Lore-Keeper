@@ -4,7 +4,10 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Card, CardContent, CardHeader } from '../ui/card';
+import { MemoryCardComponent } from '../memory-explorer/MemoryCard';
+import { ColorCodedTimeline } from '../timeline/ColorCodedTimeline';
 import { fetchJson } from '../../lib/api';
+import { memoryEntryToCard, type MemoryCard } from '../../types/memory';
 import type { Character } from './CharacterProfileCard';
 
 type SocialMedia = {
@@ -49,6 +52,9 @@ export const CharacterDetailModal = ({ character, onClose, onUpdate }: Character
   const [editedCharacter, setEditedCharacter] = useState<CharacterDetail>(character as CharacterDetail);
   const [loading, setLoading] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(true);
+  const [loadingMemories, setLoadingMemories] = useState(false);
+  const [sharedMemoryCards, setSharedMemoryCards] = useState<MemoryCard[]>([]);
+  const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'info' | 'social' | 'relationships' | 'history'>('info');
 
   useEffect(() => {
@@ -57,6 +63,11 @@ export const CharacterDetailModal = ({ character, onClose, onUpdate }: Character
       try {
         const response = await fetchJson<CharacterDetail>(`/api/characters/${character.id}`);
         setEditedCharacter(response);
+        
+        // Load full entry details for shared memories
+        if (response.shared_memories && response.shared_memories.length > 0) {
+          await loadSharedMemories(response.shared_memories);
+        }
       } catch (error) {
         console.error('Failed to load character details:', error);
       } finally {
@@ -65,6 +76,39 @@ export const CharacterDetailModal = ({ character, onClose, onUpdate }: Character
     };
     void loadFullDetails();
   }, [character.id]);
+
+  const loadSharedMemories = async (sharedMemories: Array<{ id: string; entry_id: string; date: string; summary?: string }>) => {
+    setLoadingMemories(true);
+    try {
+      // Fetch full entry details for each shared memory
+      const entryPromises = sharedMemories.map(async (memory) => {
+        try {
+          const entry = await fetchJson<{
+            id: string;
+            date: string;
+            content: string;
+            summary?: string | null;
+            tags: string[];
+            mood?: string | null;
+            chapter_id?: string | null;
+            source: string;
+            metadata?: Record<string, unknown>;
+          }>(`/api/entries/${memory.entry_id}`);
+          return memoryEntryToCard(entry);
+        } catch (error) {
+          console.error(`Failed to load entry ${memory.entry_id}:`, error);
+          return null;
+        }
+      });
+
+      const cards = (await Promise.all(entryPromises)).filter((card): card is MemoryCard => card !== null);
+      setSharedMemoryCards(cards);
+    } catch (error) {
+      console.error('Failed to load shared memories:', error);
+    } finally {
+      setLoadingMemories(false);
+    }
+  };
 
   const handleSave = async () => {
     setLoading(true);
@@ -475,7 +519,7 @@ export const CharacterDetailModal = ({ character, onClose, onUpdate }: Character
             )}
 
             {!loadingDetails && activeTab === 'history' && (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h3 className="text-lg font-semibold text-white flex items-center gap-2">
@@ -492,52 +536,67 @@ export const CharacterDetailModal = ({ character, onClose, onUpdate }: Character
                     </span>
                   )}
                 </div>
-                {editedCharacter.shared_memories && editedCharacter.shared_memories.length > 0 ? (
-                  <div className="space-y-3">
-                    {editedCharacter.shared_memories.map((memory) => (
-                      <Card key={memory.id} className="bg-black/40 border-border/50 hover:border-primary/30 transition-colors">
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
-                              <Calendar className="h-5 w-5 text-primary" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="text-xs font-medium text-primary/80">
-                                  {new Date(memory.date).toLocaleDateString('en-US', { 
-                                    month: 'short', 
-                                    day: 'numeric', 
-                                    year: 'numeric' 
-                                  })}
-                                </span>
-                                <span className="text-xs text-white/40">
-                                  {new Date(memory.date).toLocaleTimeString('en-US', { 
-                                    hour: 'numeric', 
-                                    minute: '2-digit' 
-                                  })}
-                                </span>
-                              </div>
-                              {memory.summary ? (
-                                <p className="text-sm text-white/90 leading-relaxed">{memory.summary}</p>
-                              ) : (
-                                <p className="text-sm text-white/60 italic">Memory recorded</p>
-                              )}
-                              {memory.entry_id && (
-                                <button 
-                                  className="text-xs text-primary/70 hover:text-primary mt-2"
-                                  onClick={() => {
-                                    // Could navigate to entry if needed
-                                    console.log('View entry:', memory.entry_id);
-                                  }}
-                                >
-                                  View full entry →
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+
+                {/* Timeline */}
+                {sharedMemoryCards.length > 0 && (
+                  <div className="border-b border-border/60 pb-6">
+                    <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      Timeline
+                    </h4>
+                    <div className="overflow-x-auto overflow-y-hidden">
+                      <ColorCodedTimeline
+                        entries={sharedMemoryCards.map(memory => ({
+                          id: memory.id,
+                          content: memory.content,
+                          date: memory.date,
+                          chapter_id: memory.chapterId || null
+                        }))}
+                        showLabel={true}
+                        onItemClick={(item) => {
+                          const clickedMemory = sharedMemoryCards.find(m => m.id === item.id);
+                          if (clickedMemory) {
+                            setExpandedCardId(expandedCardId === clickedMemory.id ? null : clickedMemory.id);
+                            // Scroll to the card
+                            setTimeout(() => {
+                              const element = document.querySelector(`[data-memory-id="${clickedMemory.id}"]`);
+                              element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 100);
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Memory Cards */}
+                {loadingMemories ? (
+                  <div className="text-center py-12 text-white/60">
+                    <p>Loading shared memories...</p>
+                  </div>
+                ) : sharedMemoryCards.length > 0 ? (
+                  <div>
+                    <h4 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      Memory Cards
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {sharedMemoryCards.map((memory) => (
+                        <div key={memory.id} data-memory-id={memory.id}>
+                          <MemoryCardComponent
+                            memory={memory}
+                            showLinked={true}
+                            expanded={expandedCardId === memory.id}
+                            onToggleExpand={() => setExpandedCardId(expandedCardId === memory.id ? null : memory.id)}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : editedCharacter.shared_memories && editedCharacter.shared_memories.length > 0 ? (
+                  <div className="text-center py-12 text-white/40">
+                    <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p className="text-lg font-medium mb-1">Loading memory details...</p>
                   </div>
                 ) : (
                   <div className="text-center py-12 text-white/40">

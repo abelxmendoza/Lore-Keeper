@@ -731,16 +731,16 @@ export const ColorCodedTimeline = ({
         ) : (
           // Legacy flat rendering
           <div className="flex gap-2">
-            {timelineItems.map((item) => {
-              const isChapter = item.type === 'chapter';
-              const isEntry = item.type === 'entry';
-              const isSaga = item.type === 'saga';
-              const isArc = item.type === 'arc';
-              const isEra = item.type === 'era';
-              const isMemory = item.type === 'memory';
-              const isCurrent = currentItemId === item.id;
-              const itemColor = getItemColor(item);
-              const rgb = hslToRgb(itemColor);
+        {timelineItems.map((item) => {
+          const isChapter = item.type === 'chapter';
+          const isEntry = item.type === 'entry';
+          const isSaga = item.type === 'saga';
+          const isArc = item.type === 'arc';
+          const isEra = item.type === 'era';
+          const isMemory = item.type === 'memory';
+          const isCurrent = currentItemId === item.id;
+          const itemColor = getItemColor(item);
+          const rgb = hslToRgb(itemColor);
           
           // Different opacity and styling based on type
           const getOpacity = () => {

@@ -9,7 +9,7 @@ import { ChapterViewer } from '../components/ChapterViewer';
 import { CreateChapterModal } from '../components/CreateChapterModal';
 import { EntryList } from '../components/EntryList';
 import { EvolutionPanel } from '../components/EvolutionPanel';
-import { HQIPanel } from '../components/hqi/HQIPanel';
+import { MemoryExplorer } from '../components/memory-explorer/MemoryExplorer';
 import { IdentityPulsePanel } from '../components/identity/IdentityPulsePanel';
 import { InsightsPanel } from '../components/InsightsPanel';
 import { Logo } from '../components/Logo';
@@ -27,6 +27,7 @@ import { fetchJson } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { ChatFirstInterface } from '../components/chat/ChatFirstInterface';
 import { CharacterBook } from '../components/characters/CharacterBook';
+import { Locations } from '../components/locations/Locations';
 import { ImprovedTimelineView } from '../components/timeline/ImprovedTimelineView';
 import { MemoirEditor } from '../components/memoir/MemoirEditor';
 import { LoreBook } from '../components/lorebook/LoreBook';
@@ -45,7 +46,7 @@ const formatRange = (days = 7) => {
   };
 };
 
-type SurfaceKey = 'chat' | 'timeline' | 'search' | 'characters' | 'memoir' | 'lorebook';
+type SurfaceKey = 'chat' | 'timeline' | 'search' | 'characters' | 'locations' | 'memoir' | 'lorebook';
 
 
 
@@ -185,8 +186,8 @@ const AppContent = () => {
   );
 
   const renderSearchSurface = () => (
-    <div className="space-y-6">
-      <HQIPanel />
+    <div className="h-full">
+      <MemoryExplorer />
     </div>
   );
 
@@ -234,6 +235,7 @@ const AppContent = () => {
         )}
         {activeSurface === 'search' && renderSearchSurface()}
         {activeSurface === 'characters' && <CharacterBook />}
+        {activeSurface === 'locations' && <Locations />}
         {activeSurface === 'memoir' && (
           <div className="rounded-2xl border border-border/60 bg-black/40 shadow-panel min-h-[calc(100vh-12rem)]">
             <MemoirEditor />
