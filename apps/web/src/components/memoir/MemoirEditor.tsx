@@ -957,7 +957,7 @@ export const MemoirEditor = () => {
   };
 
   return (
-    <div className="h-full flex flex-col overflow-y-auto">
+    <div className="min-h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-border/50">
         <div>
@@ -1125,7 +1125,7 @@ export const MemoirEditor = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-y-auto">
+      <div className="flex-1 flex">
         {/* Outline Editor */}
         {showOutline && (
           <div className="w-80 border-r border-border/50 flex-shrink-0 overflow-y-auto">
@@ -1148,11 +1148,11 @@ export const MemoirEditor = () => {
         )}
 
         {/* Editor Content */}
-        <div className="flex-1 flex overflow-y-auto">
-          <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 flex">
+          <div className="flex-1 p-8 pb-16">
 
           {/* Memoir Sections */}
-          <div className="space-y-4">
+          <div className="space-y-6">
             {sortedSections.length === 0 ? (
               <div className="text-center py-12 text-white/60">
                 <BookOpen className="h-12 w-12 mx-auto mb-4 text-white/20" />
