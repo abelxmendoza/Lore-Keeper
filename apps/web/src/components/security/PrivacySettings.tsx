@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Shield, Download, Trash2, AlertTriangle } from 'lucide-react';
+import { Shield, Download, Trash2, AlertTriangle, Crown } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Switch } from '../ui/switch';
@@ -7,6 +7,8 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { fetchJson } from '../../lib/api';
 import { announceToScreenReader } from '../../lib/accessibility';
+import { PrivacyAssurance } from '../subscription/PrivacyAssurance';
+import { useSubscription } from '../../hooks/useSubscription';
 
 type PrivacySettings = {
   dataRetentionDays: number;
@@ -260,6 +262,9 @@ export const PrivacySettings = () => {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Privacy Assurance */}
+      <PrivacyAssurance />
     </div>
   );
 };

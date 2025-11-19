@@ -18,6 +18,8 @@
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.0",
     "@radix-ui/react-scroll-area": "^1.1.0",
+    "@stripe/react-stripe-js": "^5.4.0",
+    "@stripe/stripe-js": "^8.5.2",
     "@supabase/supabase-js": "^2.46.1",
     "@tanstack/react-virtual": "^3.5.0",
     "axios": "^1.7.7",

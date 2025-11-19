@@ -1,11 +1,11 @@
-import { BookMarked, CalendarDays, Compass, MessageSquareText, Plus, Search, Sparkles, Users, BookOpen, MapPin } from 'lucide-react';
+import { BookMarked, CalendarDays, Compass, MessageSquareText, Plus, Search, Sparkles, Users, BookOpen, MapPin, Crown } from 'lucide-react';
 
 import { Logo } from './Logo';
 import { Button } from './ui/button';
 
 interface SidebarProps {
-  activeSurface?: 'chat' | 'timeline' | 'search' | 'characters' | 'locations' | 'memoir' | 'lorebook';
-  onSurfaceChange?: (surface: 'chat' | 'timeline' | 'search' | 'characters' | 'locations' | 'memoir' | 'lorebook') => void;
+  activeSurface?: 'chat' | 'timeline' | 'search' | 'characters' | 'locations' | 'memoir' | 'lorebook' | 'subscription' | 'pricing';
+  onSurfaceChange?: (surface: 'chat' | 'timeline' | 'search' | 'characters' | 'locations' | 'memoir' | 'lorebook' | 'subscription' | 'pricing') => void;
   onCreateChapter?: () => void;
   onScrollToDiscovery?: () => void;
   onToggleDevMode?: () => void;
@@ -111,6 +111,17 @@ export const Sidebar = ({
       >
         <Compass className="h-4 w-4 text-primary" />
         Discovery Hub
+      </button>
+      <button
+        onClick={() => onSurfaceChange?.('subscription')}
+        className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-sm transition ${
+          activeSurface === 'subscription'
+            ? 'border-primary bg-primary/10 text-white'
+            : 'border-transparent text-white/70 hover:border-primary hover:bg-primary/10'
+        }`}
+      >
+        <Crown className="h-4 w-4 text-primary" />
+        Subscription
       </button>
     </div>
     <div className="mt-auto">

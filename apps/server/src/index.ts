@@ -54,6 +54,7 @@ import { devRouter } from './routes/dev';
 import healthRouter from './routes/health';
 import { timeRouter } from './routes/time';
 import { privacyRouter } from './routes/privacy';
+import { subscriptionRouter } from './routes/subscription';
 import { errorHandler } from './middleware/errorHandler';
 import { asyncHandler } from './middleware/errorHandler';
 import { requestIdMiddleware } from './utils/requestId';
@@ -79,6 +80,9 @@ app.use(cors({
   origin: isDevelopment ? true : process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true
 }));
+
+// Stripe webhook endpoint (must be before body parser - needs raw body)
+app.use('/api/subscription/webhook', express.raw({ type: 'application/json' }), subscriptionRouter);
 
 // Request size limits - larger in development
 app.use(express.json({ limit: isDevelopment ? '50mb' : '1mb' }));
@@ -147,6 +151,7 @@ apiRouter.use('/identity', identityRouter);
 apiRouter.use('/harmonization', harmonizationRouter);
 apiRouter.use('/chat', chatRouter);
 apiRouter.use('/naming', namingRouter);
+apiRouter.use('/subscription', subscriptionRouter);
 apiRouter.use('/memoir', memoirRouter);
 apiRouter.use('/documents', documentsRouter);
 apiRouter.use('/time', timeRouter);

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import { CalendarRange, PenLine, PlusCircle, Search as SearchIcon, Wand2 } from 'lucide-react';
 
 import { AuthGate } from '../components/AuthGate';
@@ -35,6 +35,9 @@ import { PopulateDummyData } from '../components/dev/PopulateDummyData';
 import { ChapterCreationChatbot } from '../components/chapters/ChapterCreationChatbot';
 import { TimelineHierarchyPanel } from '../components/timeline-hierarchy/TimelineHierarchyPanel';
 import { TimelinePage } from '../components/timeline/TimelinePage';
+import { SubscriptionManagement } from '../components/subscription/SubscriptionManagement';
+import { TrialBanner } from '../components/subscription/TrialBanner';
+import { PricingPage } from '../components/subscription/PricingPage';
 
 const formatRange = (days = 7) => {
   const end = new Date();
@@ -47,7 +50,7 @@ const formatRange = (days = 7) => {
   };
 };
 
-type SurfaceKey = 'chat' | 'timeline' | 'search' | 'characters' | 'locations' | 'memoir' | 'lorebook';
+type SurfaceKey = 'chat' | 'timeline' | 'search' | 'characters' | 'locations' | 'memoir' | 'lorebook' | 'subscription' | 'pricing';
 
 
 
@@ -95,6 +98,17 @@ const AppContent = () => {
   const [generatingSummary, setGeneratingSummary] = useState(false);
   const [activeSurface, setActiveSurface] = useState<SurfaceKey>('chat');
   const [insights, setInsights] = useState<any>(null);
+
+  // Listen for navigation events from subscription components
+  useEffect(() => {
+    const handleNavigate = (e: CustomEvent) => {
+      if (e.detail?.surface) {
+        setActiveSurface(e.detail.surface as SurfaceKey);
+      }
+    };
+    window.addEventListener('navigate', handleNavigate as EventListener);
+    return () => window.removeEventListener('navigate', handleNavigate as EventListener);
+  }, []);
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [panelsOpen, setPanelsOpen] = useState({
     identity: false,
@@ -224,6 +238,8 @@ const AppContent = () => {
           </div>
         </header>
 
+        <TrialBanner />
+
         {activeSurface === 'chat' && (
           <div className="rounded-2xl border border-border/60 bg-black/40 shadow-panel h-[calc(100vh-12rem)]">
             <ChatFirstInterface />
@@ -245,6 +261,17 @@ const AppContent = () => {
         {activeSurface === 'lorebook' && (
           <div className="rounded-2xl border border-border/60 bg-black/40 shadow-panel min-h-[calc(100vh-4rem)]">
             <LoreBook />
+          </div>
+        )}
+        {activeSurface === 'subscription' && (
+          <div className="rounded-2xl border border-border/60 bg-black/40 shadow-panel min-h-[calc(100vh-4rem)] p-6">
+            <TrialBanner />
+            <SubscriptionManagement />
+          </div>
+        )}
+        {activeSurface === 'pricing' && (
+          <div className="rounded-2xl border border-border/60 bg-black/40 shadow-panel min-h-[calc(100vh-4rem)] overflow-auto">
+            <PricingPage onSurfaceChange={(surface) => setActiveSurface(surface as SurfaceKey)} />
           </div>
         )}
 

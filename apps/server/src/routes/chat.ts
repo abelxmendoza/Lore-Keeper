@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { z } from 'zod';
 
 import { requireAuth, type AuthenticatedRequest } from '../middleware/auth';
+import { checkAiRequestLimit } from '../middleware/subscription';
+import { incrementAiRequestCount } from '../services/usageTracking';
 import { omegaChatService } from '../services/omegaChatService';
 import { logger } from '../logger';
 
@@ -17,7 +19,7 @@ const chatSchema = z.object({
 });
 
 // Streaming endpoint
-router.post('/stream', requireAuth, async (req: AuthenticatedRequest, res) => {
+router.post('/stream', requireAuth, checkAiRequestLimit, async (req: AuthenticatedRequest, res) => {
   try {
     const parsed = chatSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -33,6 +35,11 @@ router.post('/stream', requireAuth, async (req: AuthenticatedRequest, res) => {
     res.setHeader('Connection', 'keep-alive');
 
     const result = await omegaChatService.chatStream(userId, message, conversationHistory);
+
+    // Increment usage count (fire and forget)
+    incrementAiRequestCount(userId).catch(err => 
+      logger.warn({ error: err }, 'Failed to increment AI request count')
+    );
 
     // Send metadata first
     res.write(`data: ${JSON.stringify({ type: 'metadata', data: result.metadata })}\n\n`);
@@ -62,7 +69,7 @@ router.post('/stream', requireAuth, async (req: AuthenticatedRequest, res) => {
 });
 
 // Non-streaming endpoint (fallback)
-router.post('/', requireAuth, async (req: AuthenticatedRequest, res) => {
+router.post('/', requireAuth, checkAiRequestLimit, async (req: AuthenticatedRequest, res) => {
   try {
     const parsed = chatSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -78,6 +85,11 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res) => {
     }
 
     const result = await omegaChatService.chat(userId, message, conversationHistory);
+
+    // Increment usage count (fire and forget)
+    incrementAiRequestCount(userId).catch(err => 
+      logger.warn({ error: err }, 'Failed to increment AI request count')
+    );
 
     res.json({
       ...result,

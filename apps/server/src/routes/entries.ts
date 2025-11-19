@@ -3,6 +3,8 @@ import { z } from 'zod';
 import multer from 'multer';
 
 import { requireAuth, type AuthenticatedRequest } from '../middleware/auth';
+import { checkEntryLimit } from '../middleware/subscription';
+import { incrementEntryCount } from '../services/usageTracking';
 import { chapterService } from '../services/chapterService';
 import { memoryService } from '../services/memoryService';
 import { tagService } from '../services/tagService';
@@ -214,7 +216,7 @@ router.get('/', requireAuth, validateQuery(entryQuerySchema), async (req: Authen
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/', requireAuth, validateBody(entrySchema), async (req: AuthenticatedRequest, res) => {
+router.post('/', requireAuth, checkEntryLimit, validateBody(entrySchema), async (req: AuthenticatedRequest, res) => {
   try {
     const parsed = entrySchema.safeParse(req.body);
     if (!parsed.success) {
@@ -240,6 +242,11 @@ router.post('/', requireAuth, validateBody(entrySchema), async (req: Authenticat
       metadata: parsed.data.metadata,
       relationships: parsed.data.relationships
     });
+
+    // Increment usage count (fire and forget)
+    incrementEntryCount(req.user!.id).catch(err => 
+      logger.warn({ error: err }, 'Failed to increment entry count')
+    );
 
     void emitDelta('timeline.add', { entry }, req.user!.id);
 

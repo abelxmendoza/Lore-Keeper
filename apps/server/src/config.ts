@@ -39,6 +39,12 @@ type EnvConfig = {
   microsoftRedirectUri?: string;
   encryptionSalt?: string;
   githubToken?: string;
+  stripeSecretKey?: string;
+  stripePublishableKey?: string;
+  stripeWebhookSecret?: string;
+  subscriptionPriceId?: string;
+  freeTierEntryLimit?: number;
+  freeTierAiLimit?: number;
 };
 
 export const config: EnvConfig = {
@@ -55,7 +61,13 @@ export const config: EnvConfig = {
   microsoftTenantId: process.env.MICROSOFT_TENANT_ID ?? 'common',
   microsoftRedirectUri: process.env.MICROSOFT_REDIRECT_URI ?? '',
   encryptionSalt: process.env.ENCRYPTION_SALT ?? '',
-  githubToken: process.env.GITHUB_TOKEN ?? process.env.GITHUB_API_TOKEN ?? ''
+  githubToken: process.env.GITHUB_TOKEN ?? process.env.GITHUB_API_TOKEN ?? '',
+  stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? '',
+  stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
+  stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? '',
+  subscriptionPriceId: process.env.SUBSCRIPTION_PRICE_ID ?? '',
+  freeTierEntryLimit: Number(process.env.FREE_TIER_ENTRY_LIMIT ?? 50),
+  freeTierAiLimit: Number(process.env.FREE_TIER_AI_LIMIT ?? 100)
 };
 
 export const assertConfig = () => {
