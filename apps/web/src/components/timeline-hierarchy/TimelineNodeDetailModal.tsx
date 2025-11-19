@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { X, Calendar, Tag, Sparkles, Layers, Clock, FileText, RefreshCw, Loader2 } from 'lucide-react';
+import { X, Calendar, Tag, Sparkles, Layers, Clock, FileText, RefreshCw, Loader2, Edit2, Save } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
+import { Input } from '../ui/input';
 import { fetchJson } from '../../lib/api';
 import { TimelineLayer, TimelineNode, LAYER_COLORS } from '../../types/timeline';
 
@@ -40,6 +41,9 @@ export const TimelineNodeDetailModal = ({ node, layer, onClose, onUpdate }: Time
   const [children, setChildren] = useState<TimelineNode[]>([]);
   const [loadingChildren, setLoadingChildren] = useState(false);
   const [generatingTitle, setGeneratingTitle] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(node.title);
+  const [savingTitle, setSavingTitle] = useState(false);
 
   useEffect(() => {
     // Load summary if not present
@@ -101,6 +105,7 @@ export const TimelineNodeDetailModal = ({ node, layer, onClose, onUpdate }: Time
           body: JSON.stringify({ update: true })
         }
       );
+      setEditedTitle(response.title);
       if (onUpdate) {
         onUpdate();
       }
@@ -109,6 +114,36 @@ export const TimelineNodeDetailModal = ({ node, layer, onClose, onUpdate }: Time
     } finally {
       setGeneratingTitle(false);
     }
+  };
+
+  const handleSaveTitle = async () => {
+    if (!node.id || !editedTitle.trim()) return;
+    
+    setSavingTitle(true);
+    try {
+      await fetchJson(
+        `/api/timeline/${layer}/update/${node.id}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: editedTitle.trim() })
+        }
+      );
+      setIsEditingTitle(false);
+      if (onUpdate) {
+        onUpdate();
+      }
+    } catch (error) {
+      console.error('Failed to save title:', error);
+      alert('Failed to save title. Please try again.');
+    } finally {
+      setSavingTitle(false);
+    }
+  };
+
+  const handleCancelEditTitle = () => {
+    setEditedTitle(node.title);
+    setIsEditingTitle(false);
   };
 
   const layerColor = LAYER_COLORS[layer];

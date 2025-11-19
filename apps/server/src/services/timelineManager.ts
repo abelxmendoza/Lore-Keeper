@@ -9,6 +9,7 @@ import { v4 as uuid } from 'uuid';
 import { config } from '../config';
 import { logger } from '../logger';
 import { supabaseAdmin } from './supabaseClient';
+import { titleGenerationService } from './titleGenerationService';
 import {
   TimelineLayer,
   TimelineNode,
@@ -134,6 +135,34 @@ class TimelineManager {
         if (!parentExists) {
           throw new Error(`Parent node ${payload.parent_id} does not exist`);
         }
+      }
+    }
+
+    // Get current node to check if title needs regeneration
+    const currentNode = await this.getNode(userId, layer, nodeId);
+    const currentTitle = payload.title !== undefined ? payload.title : currentNode.title;
+    const needsTitleRegeneration = 
+      (currentTitle.toLowerCase().includes('untitled') || 
+       currentTitle.toLowerCase().includes('new ') ||
+       currentTitle === `Untitled ${layer}`) &&
+      (layer === 'arc' || layer === 'saga' || layer === 'era');
+
+    // Auto-generate title if needed
+    let finalTitle = currentTitle;
+    if (needsTitleRegeneration) {
+      try {
+        const updatedNode = {
+          ...currentNode,
+          ...payload,
+          start_date: payload.start_date || currentNode.start_date,
+          end_date: payload.end_date !== undefined ? payload.end_date : currentNode.end_date
+        };
+        finalTitle = await this.autoGenerateTitle(userId, layer, updatedNode);
+        if (finalTitle && !finalTitle.includes('Untitled')) {
+          payload.title = finalTitle;
+        }
+      } catch (error) {
+        logger.debug({ error }, 'Title regeneration failed during update, keeping existing');
       }
     }
 
@@ -608,6 +637,87 @@ ${context || 'No recent context'}`
         contextParts.push(`Related memories:\n${entryContent}`);
       }
 
+      // Use specialized title generation service for arcs, sagas, and eras
+      if (layer === 'arc' || layer === 'saga' || layer === 'era') {
+        try {
+          const entriesData = entries?.map((e: any) => ({
+            content: e.content,
+            date: e.date,
+            summary: e.summary
+          })) || [];
+
+          const dateRange = {
+            from: node.start_date,
+            to: node.end_date || undefined
+          };
+
+          // Get parent title for context
+          let parentTitle: string | undefined;
+          if (node.parent_id && layer === 'arc') {
+            try {
+              const parent = await this.getNode(userId, 'saga', node.parent_id);
+              parentTitle = parent.title;
+            } catch {
+              // Ignore if parent not found
+            }
+          }
+
+          if (layer === 'arc') {
+            return await titleGenerationService.generateArcTitle(userId, entriesData, dateRange, parentTitle);
+          } else if (layer === 'saga') {
+            // Try to get arcs first
+            const { data: arcs } = await supabaseAdmin
+              .from('timeline_arcs')
+              .select('title, description')
+              .eq('user_id', userId)
+              .gte('start_date', node.start_date)
+              .order('start_date', { ascending: true })
+              .limit(10);
+            
+            if (node.end_date && arcs) {
+              // Filter arcs by end date
+              arcs.filter((a: any) => !a.start_date || a.start_date <= node.end_date);
+            }
+
+            if (arcs && arcs.length > 0) {
+              return await titleGenerationService.generateSagaTitle(
+                userId,
+                arcs.map((a: any) => ({ title: a.title, description: a.description })),
+                undefined,
+                dateRange
+              );
+            }
+            return await titleGenerationService.generateSagaTitle(userId, undefined, entriesData, dateRange);
+          } else if (layer === 'era') {
+            // Try to get sagas first
+            const { data: sagas } = await supabaseAdmin
+              .from('timeline_sagas')
+              .select('title, description')
+              .eq('user_id', userId)
+              .gte('start_date', node.start_date)
+              .order('start_date', { ascending: true })
+              .limit(10);
+            
+            if (node.end_date && sagas) {
+              sagas.filter((s: any) => !s.start_date || s.start_date <= node.end_date);
+            }
+
+            if (sagas && sagas.length > 0) {
+              return await titleGenerationService.generateEraTitle(
+                userId,
+                sagas.map((s: any) => ({ title: s.title, description: s.description })),
+                undefined,
+                dateRange
+              );
+            }
+            return await titleGenerationService.generateEraTitle(userId, undefined, entriesData, dateRange);
+          }
+        } catch (error) {
+          logger.debug({ error, layer }, 'Specialized title generation failed, falling back to generic');
+        }
+      }
+
+      // Fallback to generic title generation for other layers
       const completion = await openai.chat.completions.create({
         model: config.defaultModel,
         temperature: 0.7,
@@ -631,6 +741,25 @@ Return only the title, no quotes or extra text.`
       logger.error({ error, layer, nodeId: typeof nodeIdOrNode === 'string' ? nodeIdOrNode : 'temp' }, 'Auto-title generation failed');
       return `Untitled ${layer}`;
     }
+  }
+
+  /**
+   * Refresh/regenerate title for an existing timeline node
+   * Useful when content has accumulated and title should be updated
+   */
+  async refreshTitle(
+    userId: string,
+    layer: TimelineLayer,
+    nodeId: string
+  ): Promise<string> {
+    const node = await this.getNode(userId, layer, nodeId);
+    const newTitle = await this.autoGenerateTitle(userId, layer, node);
+    
+    if (newTitle && newTitle !== node.title && !newTitle.includes('Untitled')) {
+      await this.updateNode(userId, layer, nodeId, { title: newTitle });
+    }
+    
+    return newTitle;
   }
 
   /**

@@ -37,6 +37,20 @@ class MemoryService {
     if (payload.relationships?.length) {
       metadata.relationships = payload.relationships;
     }
+    // Auto-generate summary if not provided
+    let summary = payload.summary;
+    if (!summary && payload.content && payload.content.length > 20) {
+      try {
+        summary = await titleGenerationService.generateEntrySummary(
+          payload.userId,
+          payload.content,
+          payload.date
+        );
+      } catch (error) {
+        logger.debug({ error }, 'Failed to auto-generate summary, continuing without');
+      }
+    }
+
     const entry: MemoryEntry = {
       id: uuid(),
       user_id: payload.userId,
@@ -45,7 +59,7 @@ class MemoryService {
       tags: payload.tags ?? [],
       chapter_id: payload.chapterId ?? null,
       mood: payload.mood ?? null,
-      summary: payload.summary ?? null,
+      summary: summary ?? null,
       source: payload.source ?? 'manual',
       metadata
     };

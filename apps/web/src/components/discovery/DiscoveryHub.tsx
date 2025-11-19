@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Compass, Brain, Users, BookOpen, Network, Sparkles, Zap } from 'lucide-react';
+import { Compass, Brain, Users, BookOpen, Network, Sparkles, Zap, Heart, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { IdentityPulsePanel } from '../identity/IdentityPulsePanel';
 import { CharacterBook } from '../characters/CharacterBook';
@@ -7,9 +7,11 @@ import { SagaScreen } from '../saga/SagaScreen';
 import { MemoryFabricPanel } from '../fabric/MemoryFabricPanel';
 import { InsightsPanel } from '../InsightsPanel';
 import { AutopilotPanel } from '../AutopilotPanel';
+import { SoulProfilePanel } from './SoulProfilePanel';
+import { TruthSeekerPanel } from './TruthSeekerPanel';
 import { fetchJson } from '../../lib/api';
 
-type PanelKey = 'identity' | 'characters' | 'saga' | 'fabric' | 'insights' | 'autopilot';
+type PanelKey = 'identity' | 'characters' | 'saga' | 'fabric' | 'insights' | 'autopilot' | 'soul' | 'truth';
 
 const panelConfig: Record<PanelKey, { label: string; icon: typeof Compass; description: string }> = {
   identity: {
@@ -41,6 +43,16 @@ const panelConfig: Record<PanelKey, { label: string; icon: typeof Compass; descr
     label: 'Autopilot',
     icon: Zap,
     description: 'AI life guidance and recommendations'
+  },
+  soul: {
+    label: 'Soul Profile',
+    icon: Heart,
+    description: 'Your essence, hopes, dreams, fears, strengths, and skills'
+  },
+  truth: {
+    label: 'Truth Seeker',
+    icon: AlertCircle,
+    description: 'Fact checking and contradiction detection'
   }
 };
 
@@ -51,7 +63,9 @@ export const DiscoveryHub = () => {
     saga: false,
     fabric: false,
     insights: false,
-    autopilot: false
+    autopilot: false,
+    soul: false,
+    truth: false
   });
   const [insights, setInsights] = useState<any>(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
@@ -172,13 +186,25 @@ export const DiscoveryHub = () => {
             </div>
           )}
           
-          {panelsOpen.autopilot && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-              <AutopilotPanel />
-            </div>
-          )}
-        </div>
-      )}
+                {panelsOpen.autopilot && (
+                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    <AutopilotPanel />
+                  </div>
+                )}
+                
+                {panelsOpen.soul && (
+                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    <SoulProfilePanel />
+                  </div>
+                )}
+                
+                {panelsOpen.truth && (
+                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    <TruthSeekerPanel />
+                  </div>
+                )}
+              </div>
+            )}
 
       {/* Empty State */}
       {!hasOpenPanels && (

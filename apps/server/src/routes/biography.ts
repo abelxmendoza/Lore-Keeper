@@ -5,6 +5,8 @@ import { requireAuth, type AuthenticatedRequest } from '../middleware/auth';
 import { memoirService } from '../services/memoirService';
 import { logger } from '../logger';
 import { omegaChatService } from '../services/omegaChatService';
+import { dateAssignmentService } from '../services/dateAssignmentService';
+import { timeEngine } from '../services/timeEngine';
 
 const router = Router();
 
@@ -63,24 +65,86 @@ router.post('/chat', requireAuth, async (req: AuthenticatedRequest, res) => {
 
     const { message, conversationHistory = [] } = parsed.data;
     
+    // Extract dates from the message for biography sections
+    const extractedDates = await omegaChatService.extractDatesAndTimes(message);
+    
     // Use the chat service to generate a response
     // The chat service will handle biography-specific context
     const response = await omegaChatService.chat(req.user!.id, message, conversationHistory);
     
     // Get updated sections after chat
     const outline = await memoirService.getOutline(req.user!.id);
-    const sections = outline.sections?.map((section: any) => ({
-      id: section.id,
-      title: section.title,
-      content: section.content || '',
-      order: section.order || 0,
-      period: section.period,
-      lastUpdated: section.lastUpdated || section.last_updated
-    })) || [];
+    
+    // Enhance sections with extracted dates
+    const sections = outline.sections?.map((section: any) => {
+      // Try to extract dates from section content if not already present
+      let period = section.period;
+      let dateMetadata: any = section.dateMetadata || {};
+      
+      if (!period && extractedDates.length > 0) {
+        // Use extracted dates to create period
+        const dates = extractedDates
+          .map(d => ({ date: new Date(d.date), confidence: d.confidence || 0 }))
+          .sort((a, b) => a.date.getTime() - b.date.getTime());
+        
+        if (dates.length >= 2) {
+          period = {
+            from: dates[0].date.toISOString(),
+            to: dates[dates.length - 1].date.toISOString()
+          };
+          dateMetadata = {
+            precision: extractedDates[0]?.precision || 'day',
+            confidence: dates[0].confidence,
+            source: 'extracted',
+            extractedAt: new Date().toISOString()
+          };
+        } else if (dates.length === 1) {
+          period = {
+            from: dates[0].date.toISOString(),
+            to: dates[0].date.toISOString()
+          };
+          dateMetadata = {
+            precision: extractedDates[0]?.precision || 'day',
+            confidence: dates[0].confidence,
+            source: 'extracted',
+            extractedAt: new Date().toISOString()
+          };
+        }
+      }
+      
+      return {
+        id: section.id,
+        title: section.title,
+        content: section.content || '',
+        order: section.order || 0,
+        period: period || section.period,
+        dateMetadata,
+        lastUpdated: section.lastUpdated || section.last_updated || new Date().toISOString()
+      };
+    }) || [];
+    
+    // Update outline with enhanced sections if dates were extracted
+    if (extractedDates.length > 0 && sections.length > 0) {
+      const updatedOutline = {
+        ...outline,
+        sections: sections.map((s: any) => ({
+          ...s,
+          period: s.period,
+          dateMetadata: s.dateMetadata
+        }))
+      };
+      await memoirService.saveOutline(req.user!.id, updatedOutline as any);
+    }
     
     res.json({
       answer: response.answer,
-      sections
+      sections,
+      extractedDates: extractedDates.map(d => ({
+        date: d.date,
+        precision: d.precision,
+        confidence: d.confidence,
+        context: d.context
+      }))
     });
   } catch (error) {
     logger.error({ err: error }, 'Failed to process biography chat');

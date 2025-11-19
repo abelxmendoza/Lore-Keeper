@@ -8,6 +8,12 @@ export type BiographySection = {
   content: string;
   order: number;
   period?: { from: string; to: string };
+  dateMetadata?: {
+    precision?: 'year' | 'month' | 'day' | 'hour' | 'minute' | 'second';
+    confidence?: number;
+    source?: string;
+    extractedAt?: string;
+  };
   lastUpdated?: string;
 };
 

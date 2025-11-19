@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import { TimelineSkeleton } from '../ui/skeleton';
 import { useTimelineData, type TimelineEntry } from '../../hooks/useTimelineData';
 import { useTimelineKeyboard } from '../../hooks/useTimelineKeyboard';
 import { TimelineHeader } from './TimelineHeader';
@@ -314,8 +315,12 @@ export const TimelinePage = () => {
   // Early returns AFTER all hooks
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full bg-gradient-to-br from-black via-purple-950/20 to-black">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-4 p-6">
+        <div className="space-y-2">
+          <div className="h-8 w-48 animate-pulse rounded-lg bg-white/10" />
+          <div className="h-4 w-32 animate-pulse rounded bg-white/10" />
+        </div>
+        <TimelineSkeleton />
       </div>
     );
   }

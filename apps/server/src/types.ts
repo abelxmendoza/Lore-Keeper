@@ -378,3 +378,40 @@ export type MemoryGraph = {
   generatedAt: string;
   entryCount?: number;
 };
+
+// Truth Seeker and Verification Types
+export type VerificationStatus = 'verified' | 'unverified' | 'contradicted' | 'ambiguous';
+
+export type ClaimType = 'date' | 'location' | 'character' | 'event' | 'relationship' | 'attribute' | 'other';
+
+export type FactClaim = {
+  id: string;
+  user_id: string;
+  entry_id: string;
+  claim_type: ClaimType;
+  subject: string;
+  attribute: string;
+  value: string;
+  confidence: number;
+  extracted_at: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type EntryVerification = {
+  id: string;
+  user_id: string;
+  entry_id: string;
+  verification_status: VerificationStatus;
+  verified_at: string;
+  verified_by: string;
+  confidence_score: number;
+  evidence_count: number;
+  contradiction_count: number;
+  supporting_entries: string[];
+  contradicting_entries: string[];
+  verification_report: Record<string, unknown>;
+  resolved: boolean;
+  resolved_at?: string | null;
+  resolution_notes?: string | null;
+  metadata?: Record<string, unknown>;
+};

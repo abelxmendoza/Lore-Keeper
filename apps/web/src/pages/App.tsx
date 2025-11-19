@@ -1,7 +1,9 @@
 import { useMemo, useState, useEffect } from 'react';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { CalendarRange, PenLine, PlusCircle, Search as SearchIcon, Wand2 } from 'lucide-react';
 
 import { AuthGate } from '../components/AuthGate';
+import { SkipLink } from '../components/SkipLink';
 import { AgentPanel } from '../components/AgentPanel';
 import { ChaptersList } from '../components/ChaptersList';
 import { ChapterViewer } from '../components/ChapterViewer';
@@ -110,6 +112,37 @@ const AppContent = () => {
   const [devMode, setDevMode] = useState(false);
   const [showChapterChatbot, setShowChapterChatbot] = useState(false);
 
+  // Keyboard shortcuts
+  useKeyboardShortcuts([
+    {
+      key: 'k',
+      meta: true,
+      handler: () => {
+        setActiveSurface('search');
+        // Focus search input if it exists
+        setTimeout(() => {
+          const searchInput = document.querySelector('input[type="search"], input[placeholder*="search" i]') as HTMLInputElement;
+          searchInput?.focus();
+        }, 100);
+      },
+      description: 'Open search'
+    },
+    {
+      key: 'n',
+      meta: true,
+      handler: () => {
+        // Switch to timeline and focus on entry creation
+        setActiveSurface('timeline');
+        // Try to focus on entry composer if it exists
+        setTimeout(() => {
+          const textarea = document.querySelector('textarea[placeholder*="memory" i], textarea[placeholder*="entry" i]') as HTMLTextAreaElement;
+          textarea?.focus();
+        }, 100);
+      },
+      description: 'New entry'
+    }
+  ]);
+
   const handleSummary = async () => {
     setGeneratingSummary(true);
     try {
@@ -178,6 +211,7 @@ const AppContent = () => {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-black via-purple-950 to-black">
+      <SkipLink />
       <Sidebar
         activeSurface={activeSurface}
         onSurfaceChange={setActiveSurface}
@@ -185,7 +219,7 @@ const AppContent = () => {
         onToggleDevMode={() => setDevMode((prev) => !prev)}
         devModeEnabled={devMode}
       />
-      <main className="flex-1 space-y-6 p-6 text-white overflow-x-hidden">
+      <main id="main-content" className="flex-1 space-y-6 p-6 text-white overflow-x-hidden" role="main">
         <header className="flex items-center justify-between rounded-2xl border border-border/60 bg-opacity-70 bg-[radial-gradient(circle_at_top,_rgba(126,34,206,0.35),_transparent)] p-4 shadow-panel">
           <div>
             <h1 className="text-2xl font-semibold">Welcome back</h1>

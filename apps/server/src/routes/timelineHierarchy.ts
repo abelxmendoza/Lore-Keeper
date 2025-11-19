@@ -15,7 +15,7 @@ const router = Router();
 
 // Validation schemas
 const createNodeSchema = z.object({
-  title: z.string().min(1),
+  title: z.string().min(1).optional(), // Optional - will be auto-generated if not provided
   description: z.string().optional(),
   start_date: z.string(),
   end_date: z.string().nullable().optional(),
@@ -335,12 +335,9 @@ router.post(
         return res.status(400).json({ error: `Invalid layer: ${layer}` });
       }
 
-      const title = await timelineManager.autoGenerateTitle(req.user!.id, layer, id);
-      // Optionally update the node with the new title
-      if (req.body.update === true) {
-        await timelineManager.updateNode(req.user!.id, layer, id, { title });
-      }
-      res.json({ title });
+      // Use refreshTitle which automatically updates the node
+      const title = await timelineManager.refreshTitle(req.user!.id, layer, id);
+      res.json({ title, updated: true });
     } catch (error: any) {
       logger.error({ error, userId: req.user?.id }, 'Failed to auto-generate title');
       res.status(500).json({ error: error.message || 'Failed to auto-generate title' });

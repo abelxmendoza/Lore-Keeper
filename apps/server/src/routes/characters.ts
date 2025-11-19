@@ -1,12 +1,39 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { randomUUID } from 'crypto';
 
 import { requireAuth, type AuthenticatedRequest } from '../middleware/auth';
 import { peoplePlacesService } from '../services/peoplePlacesService';
 import { supabaseAdmin } from '../services/supabaseClient';
 import { logger } from '../logger';
+import { characterAvatarUrl, avatarStyleFor } from '../utils/avatar';
+import { cacheAvatar } from '../utils/cacheAvatar';
 
 const router = Router();
+
+const createCharacterSchema = z.object({
+  name: z.string().min(1),
+  alias: z.array(z.string()).optional(),
+  pronouns: z.string().optional(),
+  archetype: z.string().optional(),
+  role: z.string().optional(),
+  status: z.string().optional(),
+  summary: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  social_media: z
+    .object({
+      instagram: z.string().optional(),
+      twitter: z.string().optional(),
+      facebook: z.string().optional(),
+      linkedin: z.string().optional(),
+      github: z.string().optional(),
+      website: z.string().optional(),
+      email: z.string().email().optional(),
+      phone: z.string().optional()
+    })
+    .optional(),
+  metadata: z.record(z.unknown()).optional()
+});
 
 const updateCharacterSchema = z.object({
   name: z.string().optional(),
@@ -30,6 +57,122 @@ const updateCharacterSchema = z.object({
     })
     .optional(),
   metadata: z.record(z.unknown()).optional()
+});
+
+/**
+ * @swagger
+ * /api/characters:
+ *   post:
+ *     summary: Create a new character
+ *     tags: [Characters]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *             properties:
+ *               name:
+ *                 type: string
+ *               alias:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               pronouns:
+ *                 type: string
+ *               archetype:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *               summary:
+ *                 type: string
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               social_media:
+ *                 type: object
+ *               metadata:
+ *                 type: object
+ *     responses:
+ *       201:
+ *         description: Character created successfully
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Server error
+ */
+router.post('/', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const parsed = createCharacterSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid character data', details: parsed.error.flatten() });
+    }
+
+    const characterData = parsed.data;
+    const userId = req.user!.id;
+    const id = randomUUID();
+
+    // Determine avatar style based on character type/archetype
+    const style = avatarStyleFor(characterData.archetype || characterData.role);
+    const dicebearUrl = characterAvatarUrl(id, style);
+
+    // Try to cache avatar (optional - failures are handled gracefully)
+    let avatarUrl = dicebearUrl;
+    try {
+      avatarUrl = await cacheAvatar(id, dicebearUrl);
+    } catch (error) {
+      logger.warn({ error, characterId: id }, 'Avatar caching failed, using direct URL');
+    }
+
+    // Merge social_media into metadata
+    const metadata: Record<string, unknown> = {
+      ...(characterData.metadata || {}),
+      ...(characterData.social_media ? { social_media: characterData.social_media } : {})
+    };
+
+    // Insert character with avatar
+    const { data: character, error } = await supabaseAdmin
+      .from('characters')
+      .insert({
+        id,
+        user_id: userId,
+        name: characterData.name,
+        alias: characterData.alias || [],
+        pronouns: characterData.pronouns || null,
+        archetype: characterData.archetype || null,
+        role: characterData.role || null,
+        status: characterData.status || 'active',
+        summary: characterData.summary || null,
+        tags: characterData.tags || [],
+        avatar_url: avatarUrl,
+        metadata,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select('*')
+      .single();
+
+    if (error) {
+      // Handle unique constraint violation (user_id, name)
+      if (error.code === '23505') {
+        return res.status(409).json({ error: 'Character with this name already exists' });
+      }
+      logger.error({ err: error }, 'Failed to create character');
+      return res.status(500).json({ error: 'Failed to create character' });
+    }
+
+    res.status(201).json({ character });
+  } catch (error) {
+    logger.error({ err: error }, 'Failed to create character');
+    res.status(500).json({ error: 'Failed to create character' });
+  }
 });
 
 /**
@@ -139,6 +282,7 @@ router.get('/list', requireAuth, async (req: AuthenticatedRequest, res) => {
             first_appearance: char.first_appearance,
             summary: char.summary,
             tags: char.tags || [],
+            avatar_url: char.avatar_url || null,
             social_media: social_media || undefined,
             metadata: metadata,
             created_at: char.created_at,
@@ -280,6 +424,7 @@ router.get('/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
       first_appearance: character.first_appearance,
       summary: character.summary,
       tags: character.tags || [],
+      avatar_url: character.avatar_url || null,
       social_media: social_media || undefined,
       metadata: metadata,
       created_at: character.created_at,

@@ -26,114 +26,134 @@ export const Sidebar = ({
     <div className="mt-8 space-y-2">
       <button
         onClick={() => onSurfaceChange?.('chat')}
+        aria-label="Open chat interface"
+        aria-current={activeSurface === 'chat' ? 'page' : undefined}
         className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-sm transition ${
           activeSurface === 'chat'
             ? 'border-primary bg-primary/10 text-white'
             : 'border-transparent text-white/70 hover:border-primary hover:bg-primary/10'
         }`}
       >
-        <MessageSquareText className="h-4 w-4 text-primary" />
+        <MessageSquareText className="h-4 w-4 text-primary" aria-hidden="true" />
         Chat
       </button>
       <button
         onClick={() => onSurfaceChange?.('characters')}
+        aria-label="Open characters view"
+        aria-current={activeSurface === 'characters' ? 'page' : undefined}
         className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-sm transition ${
           activeSurface === 'characters'
             ? 'border-primary bg-primary/10 text-white'
             : 'border-transparent text-white/70 hover:border-primary hover:bg-primary/10'
         }`}
       >
-        <Users className="h-4 w-4 text-primary" />
+        <Users className="h-4 w-4 text-primary" aria-hidden="true" />
         Characters
       </button>
       <button
         onClick={() => onSurfaceChange?.('locations')}
+        aria-label="Open locations view"
+        aria-current={activeSurface === 'locations' ? 'page' : undefined}
         className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-sm transition ${
           activeSurface === 'locations'
             ? 'border-primary bg-primary/10 text-white'
             : 'border-transparent text-white/70 hover:border-primary hover:bg-primary/10'
         }`}
       >
-        <MapPin className="h-4 w-4 text-primary" />
+        <MapPin className="h-4 w-4 text-primary" aria-hidden="true" />
         Locations
       </button>
       <button
         onClick={() => {
           onSurfaceChange?.('timeline');
         }}
+        aria-label="Open timeline view"
+        aria-current={activeSurface === 'timeline' ? 'page' : undefined}
         className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-sm transition ${
           activeSurface === 'timeline'
             ? 'border-primary bg-primary/10 text-white'
             : 'border-transparent text-white/70 hover:border-primary hover:bg-primary/10'
         }`}
       >
-        <CalendarDays className="h-4 w-4 text-primary" />
+        <CalendarDays className="h-4 w-4 text-primary" aria-hidden="true" />
         Omni Timeline
       </button>
       <button
         onClick={() => onSurfaceChange?.('search')}
+        aria-label="Open memory explorer"
+        aria-current={activeSurface === 'search' ? 'page' : undefined}
         className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-sm transition ${
           activeSurface === 'search'
             ? 'border-primary bg-primary/10 text-white'
             : 'border-transparent text-white/70 hover:border-primary hover:bg-primary/10'
         }`}
       >
-        <Search className="h-4 w-4 text-primary" />
+        <Search className="h-4 w-4 text-primary" aria-hidden="true" />
         Memory Explorer
       </button>
       <button
         onClick={() => onSurfaceChange?.('memoir')}
+        aria-label="Open biography editor"
+        aria-current={activeSurface === 'memoir' ? 'page' : undefined}
         className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-sm transition ${
           activeSurface === 'memoir'
             ? 'border-primary bg-primary/10 text-white'
             : 'border-transparent text-white/70 hover:border-primary hover:bg-primary/10'
         }`}
       >
-        <BookOpen className="h-4 w-4 text-primary" />
-        My Biography
+        <BookOpen className="h-4 w-4 text-primary" aria-hidden="true" />
+        My Biography Editor
       </button>
       <button
         onClick={() => onSurfaceChange?.('lorebook')}
+        aria-label="Open lore book"
+        aria-current={activeSurface === 'lorebook' ? 'page' : undefined}
         className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-sm font-bold transition ${
           activeSurface === 'lorebook'
             ? 'border-primary bg-primary/20 text-white shadow-lg shadow-primary/20'
             : 'border-primary/50 bg-primary/5 text-white hover:border-primary hover:bg-primary/15 hover:shadow-md hover:shadow-primary/10'
         }`}
       >
-        <BookMarked className="h-5 w-5 text-primary" />
+        <BookMarked className="h-5 w-5 text-primary" aria-hidden="true" />
         Lore Book
       </button>
       <button
         onClick={() => onSurfaceChange?.('discovery')}
+        aria-label="Open discovery hub"
+        aria-current={activeSurface === 'discovery' ? 'page' : undefined}
         className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-sm transition ${
           activeSurface === 'discovery'
             ? 'border-primary bg-primary/10 text-white'
             : 'border-transparent text-white/70 hover:border-primary hover:bg-primary/10'
         }`}
       >
-        <Compass className="h-4 w-4 text-primary" />
+        <Compass className="h-4 w-4 text-primary" aria-hidden="true" />
         Discovery Hub
       </button>
       <button
         onClick={() => onSurfaceChange?.('subscription')}
+        aria-label="Open subscription management"
+        aria-current={activeSurface === 'subscription' ? 'page' : undefined}
         className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-sm transition ${
           activeSurface === 'subscription'
             ? 'border-primary bg-primary/10 text-white'
             : 'border-transparent text-white/70 hover:border-primary hover:bg-primary/10'
         }`}
       >
-        <Crown className="h-4 w-4 text-primary" />
+        <Crown className="h-4 w-4 text-primary" aria-hidden="true" />
         Subscription
       </button>
       <button
         onClick={() => onSurfaceChange?.('security')}
+        aria-label="Open privacy and security settings"
+        aria-current={activeSurface === 'security' ? 'page' : undefined}
         className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-sm transition ${
           activeSurface === 'security'
             ? 'border-primary bg-primary/10 text-white'
             : 'border-transparent text-white/70 hover:border-primary hover:bg-primary/10'
         }`}
       >
-        <Shield className="h-4 w-4 text-primary" />
+        <Shield className="h-4 w-4 text-primary" aria-hidden="true" />
         Privacy & Security
       </button>
     </div>

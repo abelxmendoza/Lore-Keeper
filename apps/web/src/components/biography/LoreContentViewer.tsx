@@ -2,6 +2,8 @@ import { BookOpen, Users, MapPin, BookMarked, Edit } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { MarkdownRenderer } from '../chat/MarkdownRenderer';
+import { DateRangeDisplay } from '../temporal/DateRangeDisplay';
+import { DateDisplay } from '../temporal/DateDisplay';
 import type { LoreNavigatorData } from '../../hooks/useLoreNavigatorData';
 import type { SelectedItem } from './LoreNavigator';
 
@@ -38,15 +40,22 @@ export const LoreContentViewer = ({ data, selectedItem, onEdit }: LoreContentVie
                 <div className="flex-1">
                   <CardTitle className="text-2xl text-white mb-2">{section.title}</CardTitle>
                   {section.period && (
-                    <p className="text-sm text-white/50">
-                      {new Date(section.period.from).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long'
-                      })} -{' '}
-                      {new Date(section.period.to).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long'
-                      })}
+                    <DateRangeDisplay
+                      startDate={section.period.from}
+                      endDate={section.period.to}
+                      precision={(section as any).dateMetadata?.precision || 'day'}
+                      variant="compact"
+                      className="mt-1"
+                    />
+                  )}
+                  {(section as any).dateMetadata && (
+                    <p className="text-xs text-white/40 mt-1">
+                      {(section as any).dateMetadata.confidence && (
+                        <span>Confidence: {Math.round((section as any).dateMetadata.confidence * 100)}%</span>
+                      )}
+                      {(section as any).dateMetadata.source && (
+                        <span className="ml-2">Source: {(section as any).dateMetadata.source}</span>
+                      )}
                     </p>
                   )}
                 </div>
@@ -174,11 +183,13 @@ export const LoreContentViewer = ({ data, selectedItem, onEdit }: LoreContentVie
                   <div>
                     <CardTitle className="text-2xl text-white">{chapter.title}</CardTitle>
                     {(chapter.start_date || chapter.end_date) && (
-                      <p className="text-sm text-white/50 mt-1">
-                        {chapter.start_date && new Date(chapter.start_date).toLocaleDateString()}
-                        {chapter.start_date && chapter.end_date && ' - '}
-                        {chapter.end_date && new Date(chapter.end_date).toLocaleDateString()}
-                      </p>
+                      <DateRangeDisplay
+                        startDate={chapter.start_date}
+                        endDate={chapter.end_date}
+                        precision="day"
+                        variant="compact"
+                        className="mt-1"
+                      />
                     )}
                   </div>
                 </div>

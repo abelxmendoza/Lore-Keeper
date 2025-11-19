@@ -4,6 +4,7 @@ export type CharacterProfile = {
   id: string;
   name: string;
   portraitUrl?: string;
+  avatar_url?: string | null;
   pronouns?: string;
   bio?: string;
   traits?: string[];

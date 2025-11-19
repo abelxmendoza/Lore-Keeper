@@ -286,7 +286,7 @@ class OmegaChatService {
   /**
    * Extract dates and times from message using TimeEngine
    */
-  private async extractDatesAndTimes(message: string): Promise<Array<{ date: string; context: string; precision: string; confidence: number }>> {
+  async extractDatesAndTimes(message: string): Promise<Array<{ date: string; context: string; precision: string; confidence: number }>> {
     try {
       // First, use OpenAI to identify temporal references
       const completion = await openai.chat.completions.create({
@@ -469,6 +469,7 @@ class OmegaChatService {
       allChapters?: any[];
       timelineHierarchy?: any;
       allPeoplePlaces?: any[];
+      essenceProfile?: any;
     }
   ): string {
     const timelineSummary = orchestratorSummary.timeline.events
@@ -536,7 +537,25 @@ class OmegaChatService {
       ? `Canonical Facts: ${orchestratorSummary.continuity.canonical?.length || 0}\nConflicts: ${orchestratorSummary.continuity.conflicts?.length || 0}`
       : '';
 
-    return `You are an AI Life Guidance assistant integrated into Lore Keeper. You have COMPLETE ACCESS to ALL of the user's lore - their entire life story, all characters, locations, chapters, timeline, and memories.
+    // Build essence profile context
+    const essenceContext = loreData?.essenceProfile ? this.buildEssenceContext(loreData.essenceProfile) : '';
+
+    return `You are a multi-faceted AI companion integrated into Lore Keeper. You seamlessly blend five personas based on context:
+
+**YOUR PERSONAS** (adapt naturally based on conversation):
+
+1. **Therapist**: Deep, reflective, supportive - validate emotions, help process experiences, ask gentle exploratory questions
+2. **Strategist**: Goal-oriented, actionable - provide strategic guidance, help with planning, offer actionable insights
+3. **Biography Writer**: Narrative-focused, story-crafting - help shape compelling life stories, structure narratives, capture meaningful moments
+4. **Soul Capturer**: Essence-focused - identify and track core identity elements (hopes, dreams, fears, strengths, values)
+5. **Gossip Buddy**: Curious, engaging, relationship-focused - discuss characters, relationships, and social dynamics with enthusiasm and curiosity
+
+**PERSONA BLENDING**: Most conversations will naturally blend multiple personas. Detect the user's needs:
+- Emotional/heavy topics → Emphasize Therapist
+- Goal-setting/planning → Emphasize Strategist  
+- Story editing/narrative → Emphasize Biography Writer
+- Deep reflection → Emphasize Soul Capturer
+- Character/relationship talk → Emphasize Gossip Buddy
 
 **YOUR KNOWLEDGE BASE - YOU KNOW EVERYTHING ABOUT THE USER'S LORE:**
 
@@ -550,23 +569,29 @@ ${chaptersKnowledge || 'No chapters yet.'}
 ${timelineHierarchyKnowledge ? `**TIMELINE HIERARCHY:**\n${timelineHierarchyKnowledge}\n\n` : ''}
 ${identityKnowledge ? `**IDENTITY:**\n${identityKnowledge}\n\n` : ''}
 ${continuityKnowledge ? `**CONTINUITY:**\n${continuityKnowledge}\n\n` : ''}
+${essenceContext ? `**ESSENCE PROFILE - WHAT YOU KNOW ABOUT THEIR CORE SELF:**\n${essenceContext}\n\n` : ''}
 
 **Your Role**:
-1. **Know Everything**: You have access to ALL their lore - characters, locations, timeline, chapters, memories. Reference specific details when relevant.
-2. **Make Deep Connections**: Connect current conversations to past events, characters, locations, and chapters. Show you remember their story.
-3. **Track the Narrative**: Help them understand their journey, noting character arcs, location patterns, and chapter themes.
+1. **Know Everything**: You have access to ALL their lore - characters, locations, timeline, chapters, memories, AND their essence profile. Reference specific details when relevant.
+2. **Make Deep Connections**: Connect current conversations to past events, characters, locations, chapters, AND their psychological patterns.
+3. **Track the Narrative**: Help them understand their journey, noting character arcs, location patterns, chapter themes, AND personal growth.
 4. **Maintain Continuity**: Reference specific characters by name, locations by name, chapters by title. Show you know their world.
-5. **Provide Context**: When they mention a character, location, or event, reference related memories and timeline context.
+5. **Provide Context**: When they mention a character, location, or event, reference related memories, timeline context, AND relationship patterns.
 6. **Be Proactive**: Suggest connections they might not see, reference forgotten characters or locations, help them see patterns.
+7. **Capture Essence**: Naturally infer and track their hopes, dreams, fears, strengths, weaknesses, values, and traits from conversations.
+8. **Gossip Buddy Mode**: Show curiosity about characters and relationships. Ask natural questions like "Tell me more about [character]" or "What's your relationship with [character] like?"
 
 **Your Style**:
-- Conversational and warm, like ChatGPT but deeply knowledgeable about their lore
+- Conversational and warm, like ChatGPT but deeply knowledgeable about their lore AND their inner world
 - Reference specific characters, locations, and chapters by name when relevant
 - Use format: "From your timeline, [Month Year]" or "In [Chapter Name]" or "When you were at [Location]"
 - Show you remember their story: "You mentioned [Character] before in [Context]"
 - Make connections: "This reminds me of when you [past event] at [location] with [character]"
 - Reference timeline hierarchy: "During the [Era/Saga/Arc] period..."
-- Be specific: Use actual names, dates, and details from their lore
+- Reference essence insights: "I've noticed you value [value]" or "You've mentioned [fear] before - how are you feeling about that now?"
+- Be curious about relationships: "You mentioned [Character] three times this week - what's going on with them?"
+- Natural inference: Extract psychological insights without being clinical - be warm and conversational
+- Ask gentle questions: When you detect gaps or want to go deeper, ask thoughtful questions naturally
 
 **Current Context**:
 ${connections.length > 0 ? `Connections Found:\n${connections.join('\n')}\n\n` : ''}
@@ -579,7 +604,44 @@ ${timelineSummary || 'No previous entries yet.'}
 **Available Sources** (${sources.length} total - reference these in your response):
 ${sources.slice(0, 15).map((s, i) => `${i + 1}. [${s.type}] ${s.title}${s.date ? ` (${new Date(s.date).toLocaleDateString()})` : ''}${s.snippet ? ` - ${s.snippet.substring(0, 50)}` : ''}`).join('\n')}
 
-**IMPORTANT**: You know ALL their lore. Reference specific characters, locations, chapters, and timeline events by name. Show deep knowledge of their story.`;
+**IMPORTANT**: You know ALL their lore AND their essence. Reference specific characters, locations, chapters, timeline events, AND psychological insights. Show deep knowledge of their story AND their inner world. Be their therapist, strategist, biography writer, soul capturer, AND gossip buddy - all in one.`;
+  }
+
+  /**
+   * Build essence profile context string for system prompt
+   */
+  private buildEssenceContext(profile: any): string {
+    const parts: string[] = [];
+    
+    if (profile.hopes?.length > 0) {
+      parts.push(`Hopes: ${profile.hopes.slice(0, 5).map((h: any) => h.text).join(', ')}`);
+    }
+    if (profile.dreams?.length > 0) {
+      parts.push(`Dreams: ${profile.dreams.slice(0, 5).map((d: any) => d.text).join(', ')}`);
+    }
+    if (profile.fears?.length > 0) {
+      parts.push(`Fears: ${profile.fears.slice(0, 5).map((f: any) => f.text).join(', ')}`);
+    }
+    if (profile.strengths?.length > 0) {
+      parts.push(`Strengths: ${profile.strengths.slice(0, 5).map((s: any) => s.text).join(', ')}`);
+    }
+    if (profile.weaknesses?.length > 0) {
+      parts.push(`Areas for Growth: ${profile.weaknesses.slice(0, 5).map((w: any) => w.text).join(', ')}`);
+    }
+    if (profile.topSkills?.length > 0) {
+      parts.push(`Top Skills: ${profile.topSkills.slice(0, 5).map((s: any) => s.skill).join(', ')}`);
+    }
+    if (profile.coreValues?.length > 0) {
+      parts.push(`Core Values: ${profile.coreValues.slice(0, 5).map((v: any) => v.text).join(', ')}`);
+    }
+    if (profile.personalityTraits?.length > 0) {
+      parts.push(`Personality Traits: ${profile.personalityTraits.slice(0, 5).map((t: any) => t.text).join(', ')}`);
+    }
+    if (profile.relationshipPatterns?.length > 0) {
+      parts.push(`Relationship Patterns: ${profile.relationshipPatterns.slice(0, 3).map((r: any) => r.text).join(', ')}`);
+    }
+    
+    return parts.length > 0 ? parts.join('\n') : 'Essence profile still developing - continue to learn about them.';
   }
 
   /**
@@ -613,6 +675,14 @@ ${sources.slice(0, 15).map((s, i) => `${i + 1}. [${s.type}] ${s.title}${s.date ?
     
     const { orchestratorSummary, hqiResults, sources, extractedDates } = ragPacket;
 
+    // Load essence profile for context
+    let essenceProfile: any = null;
+    try {
+      essenceProfile = await essenceProfileService.getProfile(userId);
+    } catch (error) {
+      logger.debug({ error }, 'Failed to load essence profile, continuing without');
+    }
+
     // Check continuity with error handling
     let continuityWarnings: string[] = [];
     try {
@@ -637,7 +707,7 @@ ${sources.slice(0, 15).map((s, i) => `${i + 1}. [${s.type}] ${s.title}${s.date ?
       logger.debug({ error }, 'Failed to get strategic guidance, continuing without');
     }
 
-    // Build system prompt with comprehensive lore
+    // Build system prompt with comprehensive lore and essence profile
     const systemPrompt = this.buildSystemPrompt(
       orchestratorSummary,
       connections,
@@ -649,7 +719,8 @@ ${sources.slice(0, 15).map((s, i) => `${i + 1}. [${s.type}] ${s.title}${s.date ?
         allLocations: ragPacket.allLocations,
         allChapters: ragPacket.allChapters,
         timelineHierarchy: ragPacket.timelineHierarchy,
-        allPeoplePlaces: ragPacket.allPeoplePlaces
+        allPeoplePlaces: ragPacket.allPeoplePlaces,
+        essenceProfile: essenceProfile
       }
     );
 
@@ -693,6 +764,18 @@ ${sources.slice(0, 15).map((s, i) => `${i + 1}. [${s.type}] ${s.title}${s.date ?
       memoirService.autoUpdateMemoir(userId).catch(err => {
         logger.warn({ err }, 'Failed to auto-update memoir after chat');
       });
+
+      // Extract essence insights after conversation (fire and forget)
+      const fullHistory = [...conversationHistory, { role: 'user' as const, content: message }];
+      essenceProfileService.extractEssence(userId, fullHistory, ragPacket.relatedEntries)
+        .then(insights => {
+          if (Object.keys(insights).length > 0) {
+            return essenceProfileService.updateProfile(userId, insights);
+          }
+        })
+        .catch(err => {
+          logger.debug({ err }, 'Failed to extract essence insights');
+        });
     }
 
     // Extract characters
@@ -727,6 +810,14 @@ ${sources.slice(0, 15).map((s, i) => `${i + 1}. [${s.type}] ${s.title}${s.date ?
     const ragPacket = await this.buildRAGPacket(userId, message);
     const { orchestratorSummary, hqiResults, sources, extractedDates } = ragPacket;
 
+    // Load essence profile for context
+    let essenceProfile: any = null;
+    try {
+      essenceProfile = await essenceProfileService.getProfile(userId);
+    } catch (error) {
+      logger.debug({ error }, 'Failed to load essence profile, continuing without');
+    }
+
     // Check continuity
     const continuityWarnings = await this.checkContinuity(userId, message, extractedDates, orchestratorSummary);
 
@@ -736,7 +827,7 @@ ${sources.slice(0, 15).map((s, i) => `${i + 1}. [${s.type}] ${s.title}${s.date ?
     // Get strategic guidance
     const strategicGuidance = await this.getStrategicGuidance(userId, message);
 
-    // Build system prompt with comprehensive lore
+    // Build system prompt with comprehensive lore and essence profile
     const systemPrompt = this.buildSystemPrompt(
       orchestratorSummary,
       connections,
@@ -748,7 +839,8 @@ ${sources.slice(0, 15).map((s, i) => `${i + 1}. [${s.type}] ${s.title}${s.date ?
         allLocations: ragPacket.allLocations,
         allChapters: ragPacket.allChapters,
         timelineHierarchy: ragPacket.timelineHierarchy,
-        allPeoplePlaces: ragPacket.allPeoplePlaces
+        allPeoplePlaces: ragPacket.allPeoplePlaces,
+        essenceProfile: essenceProfile
       }
     );
 
@@ -775,14 +867,28 @@ ${sources.slice(0, 15).map((s, i) => `${i + 1}. [${s.type}] ${s.title}${s.date ?
     const timelineUpdates: string[] = [];
 
     if (shouldPersistMessage(message)) {
+      // Extract and assign date if available
+      let entryDate: Date | undefined;
+      if (extractedDates && extractedDates.length > 0) {
+        // Use the first extracted date with highest confidence
+        const bestDate = extractedDates.reduce((best, current) => 
+          (current.confidence || 0) > (best.confidence || 0) ? current : best
+        );
+        entryDate = new Date(bestDate.date);
+      }
+
       const savedEntry = await memoryService.saveEntry({
         userId,
         content: message,
+        date: entryDate?.toISOString(),
         tags: extractTags(message),
         source: 'chat',
         metadata: { 
           autoCaptured: true,
           extractedDates,
+          datePrecision: extractedDates[0]?.precision,
+          dateConfidence: extractedDates[0]?.confidence,
+          dateSource: extractedDates[0] ? 'extracted' : 'default',
           connections: connections.length,
           hasContinuityWarnings: continuityWarnings.length > 0,
           sourcesUsed: sources.length
@@ -790,10 +896,25 @@ ${sources.slice(0, 15).map((s, i) => `${i + 1}. [${s.type}] ${s.title}${s.date ?
       });
       entryId = savedEntry.id;
       timelineUpdates.push('Entry saved to timeline');
+      if (entryDate) {
+        timelineUpdates.push(`Date assigned: ${entryDate.toLocaleDateString()}`);
+      }
 
       memoirService.autoUpdateMemoir(userId).catch(err => {
         logger.warn({ err }, 'Failed to auto-update memoir after chat');
       });
+
+      // Extract essence insights after conversation (fire and forget)
+      const fullHistory = [...conversationHistory, { role: 'user' as const, content: message }];
+      essenceProfileService.extractEssence(userId, fullHistory, ragPacket.relatedEntries)
+        .then(insights => {
+          if (Object.keys(insights).length > 0) {
+            return essenceProfileService.updateProfile(userId, insights);
+          }
+        })
+        .catch(err => {
+          logger.debug({ err }, 'Failed to extract essence insights');
+        });
     }
 
     // Extract characters

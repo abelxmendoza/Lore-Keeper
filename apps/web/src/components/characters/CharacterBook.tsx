@@ -7,6 +7,7 @@ import { MemoryDetailModal } from '../memory-explorer/MemoryDetailModal';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card, CardContent } from '../ui/card';
+import { CharacterCardSkeleton } from '../ui/skeleton';
 import { fetchJson } from '../../lib/api';
 import { useLoreKeeper } from '../../hooks/useLoreKeeper';
 import { ColorCodedTimeline } from '../timeline/ColorCodedTimeline';
@@ -331,9 +332,10 @@ export const CharacterBook = () => {
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-white/60">
-          <RefreshCw className="h-8 w-8 mx-auto mb-4 animate-spin text-primary" />
-          <p>Loading characters...</p>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <CharacterCardSkeleton key={i} />
+          ))}
         </div>
       ) : filteredCharacters.length === 0 ? (
         <div className="text-center py-12 text-white/60">

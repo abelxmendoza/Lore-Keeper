@@ -7,6 +7,8 @@ import { supabaseAdmin } from './supabaseClient';
 import { memoryService } from './memoryService';
 import { memoirService } from './memoirService';
 import { peoplePlacesService } from './peoplePlacesService';
+import { characterAvatarUrl, avatarStyleFor } from '../utils/avatar';
+import { cacheAvatar } from '../utils/cacheAvatar';
 
 const openai = new OpenAI({ apiKey: config.openAiKey });
 
@@ -182,13 +184,28 @@ Return JSON with this structure:
     let created = 0;
     for (const char of characters) {
       try {
+        const id = uuid();
+        
+        // Generate avatar URL
+        const style = avatarStyleFor('human'); // Default to human style for document-imported characters
+        const dicebearUrl = characterAvatarUrl(id, style);
+        
+        // Try to cache avatar (optional - failures are handled gracefully)
+        let avatarUrl = dicebearUrl;
+        try {
+          avatarUrl = await cacheAvatar(id, dicebearUrl);
+        } catch (error) {
+          logger.warn({ error, characterId: id }, 'Avatar caching failed for document-imported character');
+        }
+
         const { error } = await supabaseAdmin
           .from('characters')
           .upsert({
-            id: uuid(),
+            id,
             user_id: userId,
             name: char.name,
-            description: char.description || null,
+            summary: char.description || null,
+            avatar_url: avatarUrl,
             metadata: {
               relationships: char.relationships || [],
               imported: true

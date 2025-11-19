@@ -33,7 +33,7 @@ export const BiographyEditor = () => {
     const welcomeMessage: BiographyMessage = {
       id: 'welcome',
       role: 'assistant',
-      content: "Hi! I'm your Lore Book Assistant. I can help you:\n\n- Navigate and edit your biography sections\n- Update character profiles\n- Enhance location descriptions\n- Refine chapter summaries\n- Create new content across all your lore\n\nSelect an item from the sidebar to view and edit it, or just ask me anything!",
+      content: "Hi! I'm your Biography Editor Assistant. I can help you:\n\n- Edit your biography sections\n- Update character profiles\n- Enhance location descriptions\n- Refine chapter summaries\n- Create new content across all your lore\n\nSelect an item from the sidebar to view and edit it, or just ask me anything!",
       timestamp: new Date()
     };
     setMessages([welcomeMessage]);
@@ -132,7 +132,7 @@ export const BiographyEditor = () => {
           // Complete callback
           setStreamingMessageId(null);
           
-          // Refresh data after AI interaction
+          // Refresh data after AI interaction (this will include any extracted dates)
           await refreshData();
         },
         (error: string) => {
@@ -222,8 +222,8 @@ export const BiographyEditor = () => {
         <div className="flex items-center gap-3">
           <BookOpen className="h-6 w-6 text-primary" />
           <div>
-            <h1 className="text-2xl font-semibold text-white">Lore Book Navigator</h1>
-            <p className="text-sm text-white/60">Navigate and edit your biography, characters, locations, and chapters</p>
+            <h1 className="text-2xl font-semibold text-white">My Biography Editor</h1>
+            <p className="text-sm text-white/60">Edit your biography, characters, locations, and chapters with AI assistance</p>
           </div>
         </div>
       </div>

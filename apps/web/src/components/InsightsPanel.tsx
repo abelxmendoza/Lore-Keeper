@@ -12,6 +12,11 @@ export type InsightPayload = {
   motifs?: Insight[];
   identity_shifts?: Insight[];
   predictions?: Insight[];
+  topSkills?: Array<{
+    skill: string;
+    confidence: number;
+    evidence: string[];
+  }>;
 };
 
 export const InsightsPanel = ({
@@ -68,6 +73,35 @@ export const InsightsPanel = ({
         <Section title="Motifs" content={renderSection('Motifs', insights?.motifs)} />
         <Section title="Identity Shifts" content={renderSection('Identity Shifts', insights?.identity_shifts)} />
         <Section title="Predictions" content={renderSection('Predictions', insights?.predictions)} />
+        {insights?.topSkills && insights.topSkills.length > 0 && (
+          <Section 
+            title="Top Skills" 
+            content={
+              <div className="grid gap-4 md:grid-cols-2">
+                {insights.topSkills.map((skill, idx) => (
+                  <div
+                    key={idx}
+                    className="p-4 rounded-xl border border-border/50 bg-black/40"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-white">{skill.skill}</span>
+                      <span className="text-xs text-white/50">
+                        {Math.round(skill.confidence * 100)}%
+                      </span>
+                    </div>
+                    {skill.evidence && skill.evidence.length > 0 && (
+                      <div className="text-xs text-white/60 mt-2">
+                        <span className="text-white/40">Evidence: </span>
+                        {skill.evidence.slice(0, 2).join(', ')}
+                        {skill.evidence.length > 2 && '...'}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            }
+          />
+        )}
       </div>
     </div>
   );

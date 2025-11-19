@@ -55,9 +55,19 @@ Traditional journals are hard to search, don't connect related events, and can't
 
 #### 📖 **Journal Entries**
 - Rich text journaling with markdown support
+- **AI-Powered Tag Suggestions**: Real-time tag suggestions as you type
+  - Context-aware tag recommendations based on entry content
+  - Debounced API calls for optimal performance
+  - One-click tag selection
+- **Voice Memo Recording**: Record or upload audio directly in the composer
+  - Browser-based recording using MediaRecorder API
+  - Upload pre-recorded audio files
+  - Automatic transcription using OpenAI Whisper
+  - Auto-populates composer with transcribed content, tags, and mood
+  - Recording controls: start, pause, resume, stop, and cancel
+  - Visual feedback with duration timer and recording indicators
 - Automatic tagging and mood detection
 - AI-generated summaries
-- Voice memo transcription
 - Photo integration with location context
 - Date extraction from natural language
 
@@ -72,6 +82,10 @@ Traditional journals are hard to search, don't connect related events, and can't
 - Relationship mapping (friends, family, colleagues)
 - Character timelines showing their role in your story
 - Knowledge base for each person/place
+- **Auto-Generated Avatars**: Unique avatars for each character using DiceBear API
+  - Deterministic avatar generation based on character UUID
+  - Different avatar styles for humans, AI, locations, and events
+  - Optional Supabase caching for improved performance
 - **Enhanced Character Detail Modals**: Comprehensive tabbed interface
   - **Info**: Edit character details, aliases, pronouns, archetype, role, summary, tags
   - **Social Media**: Instagram, Twitter/X, Facebook, LinkedIn, GitHub, website, email, phone
@@ -107,6 +121,17 @@ Traditional journals are hard to search, don't connect related events, and can't
   - **Metadata**: Technical details, source information, raw JSON viewer
 - Keyboard shortcuts (Ctrl/Cmd + 1-8) for quick navigation
 - Chat integration for updating memories through conversation
+
+#### 🔍 **Truth Seeker & Fact Checking**
+- **Automatic Verification**: Every entry is automatically verified against existing facts
+- **Fact Extraction**: AI extracts factual claims (dates, locations, characters, events, relationships)
+- **Contradiction Detection**: Identifies conflicts between entries
+- **Verification Status**: Four statuses - Verified, Unverified, Contradicted, Ambiguous
+- **Truth Seeker Panel**: Discovery Hub panel showing all contradictions and verification statistics
+- **Evidence Tracking**: Shows supporting and contradicting entries with evidence
+- **Manual Verification**: Request verification for specific entries or claims
+- **Resolution Tools**: Mark contradictions as resolved with notes
+- **Verification Badges**: Visual indicators on entries showing verification status
 
 #### 📖 **Biography Editor**
 - **Chatbot-style interface** - Write your biography through natural conversation
@@ -155,8 +180,15 @@ Traditional journals are hard to search, don't connect related events, and can't
   - **Memory Fabric**: Connections between memories
   - **Insights**: Patterns, correlations, and predictions
   - **Autopilot**: AI life guidance and recommendations
+  - **Truth Seeker**: Fact checking and contradiction detection
 - Clean, organized interface with visual feedback
 - Easy panel toggling system
+
+#### ⌨️ **Keyboard Shortcuts**
+- **Cmd+K** (Mac) / **Ctrl+K** (Windows): Quick search
+- **Cmd+N** (Mac) / **Ctrl+N** (Windows): Create new entry
+- **Ctrl/Cmd + 1-9**: Navigate between modal tabs
+- All shortcuts are customizable and accessible
 
 #### 🔒 **Privacy & Security**
 - **Privacy & Security Page**: Comprehensive information about data protection
@@ -187,6 +219,7 @@ Traditional journals are hard to search, don't connect related events, and can't
 
 #### 🧪 **Testing**
 - Unit tests with Vitest
+- Component tests for critical UI components
 - Integration tests
 - E2E tests with Playwright
 - Test coverage reporting
@@ -197,6 +230,20 @@ Traditional journals are hard to search, don't connect related events, and can't
 - ESLint + Prettier
 - Pre-commit hooks
 - GitHub Actions CI/CD
+
+#### ♿ **Accessibility**
+- ARIA labels and roles for screen readers
+- Keyboard navigation support
+- Skip links for main content
+- Semantic HTML structure
+- Focus management for modals and dialogs
+
+#### ⚡ **Performance**
+- Virtual scrolling for long lists (React Virtual)
+- Code splitting and lazy loading
+- Optimized bundle sizes
+- Skeleton loaders for better perceived performance
+- Debounced API calls for tag suggestions
 
 ---
 
@@ -379,10 +426,13 @@ lorekeeper/
 **Key Components:**
 - **Chat Interface**: Streaming AI responses with source citations
 - **Timeline Views**: Multiple visualization modes (graph, cards, hierarchy)
-- **Character System**: Relationship tracking and knowledge base
+- **Character System**: Relationship tracking and knowledge base with auto-generated avatars
 - **Biography Editor**: Chatbot-style interface for writing your biography
 - **Discovery Hub**: Analytical panels for exploring insights and patterns
+- **Truth Seeker**: Automatic fact checking and contradiction detection
 - **Lore Book**: Reading-optimized interface
+- **Entry Composer**: Rich text editor with AI tag suggestions and voice memo recording
+- **Skeleton Loaders**: Beautiful loading states for better UX
 
 ### Backend Architecture
 
@@ -637,8 +687,9 @@ We welcome contributions! Here's how to get started:
 - **Vite 5+** - Build tool and dev server
 - **Tailwind CSS 3+** - Utility-first CSS
 - **Lucide React** - Icon library
-- **React Virtual** - Virtual scrolling for performance
+- **@tanstack/react-virtual** - Virtual scrolling for performance
 - **TanStack Query** - Data fetching and caching
+- **Vitest** - Component and unit testing
 
 ### Backend
 - **Node.js 20+** - Runtime
@@ -657,6 +708,7 @@ We welcome contributions! Here's how to get started:
 - **OpenAI GPT-4** - Chat and content generation
 - **OpenAI Embeddings** - Semantic search vectors
 - **Whisper API** - Voice transcription
+- **DiceBear API** - Character avatar generation
 
 ### DevOps
 - **GitHub Actions** - CI/CD
@@ -678,7 +730,12 @@ We welcome contributions! Here's how to get started:
 
 ## Performance
 
-- **Frontend**: Code splitting, lazy loading, virtual scrolling
+- **Frontend**: 
+  - Code splitting and lazy loading
+  - Virtual scrolling for long lists (React Virtual)
+  - Skeleton loaders for better perceived performance
+  - Debounced API calls to reduce server load
+  - Optimized bundle sizes with Vite
 - **Backend**: Efficient queries, connection pooling, caching
 - **Database**: Indexed queries, optimized schemas
 - **Search**: Vector indexes for fast semantic search
@@ -689,25 +746,36 @@ We welcome contributions! Here's how to get started:
 
 ### Current Features (v0.1.0)
 - ✅ Journal entries with AI assistance
+- ✅ AI-powered tag suggestions
+- ✅ Voice memo recording and transcription
 - ✅ Character and relationship tracking
+- ✅ Auto-generated character avatars
 - ✅ Timeline visualization
 - ✅ Biography editor (chatbot-style)
 - ✅ Discovery Hub with analytical panels
+- ✅ Truth Seeker & Fact Checking system
 - ✅ Privacy & Security features
 - ✅ Terms of Service acceptance system
 - ✅ AI chat with context
 - ✅ Semantic search (HQI)
 - ✅ 9-layer timeline hierarchy
+- ✅ Keyboard shortcuts (Cmd+K, Cmd+N)
+- ✅ Accessibility features (ARIA labels, skip links)
+- ✅ Virtual scrolling for performance
+- ✅ Skeleton loaders for better UX
+- ✅ Frontend component tests
 
 ### Planned Features
 - 🔄 Photo gallery integration
 - 🔄 Calendar integration
 - 🔄 External platform imports (GitHub, Instagram, X/Twitter)
-- 🔄 Voice memo transcription
 - 🔄 Mobile app
 - 🔄 Export to PDF/eBook
 - 🔄 Collaborative features
 - 🔄 Advanced analytics
+- 🔄 More keyboard shortcuts
+- 🔄 Dark/light theme toggle
+- 🔄 Voice memo playback and editing
 
 ---
 

@@ -57,6 +57,8 @@ import { timeRouter } from './routes/time';
 import { privacyRouter } from './routes/privacy';
 import { subscriptionRouter } from './routes/subscription';
 import { userRouter } from './routes/user';
+import { essenceRouter } from './routes/essence';
+import { verificationRouter } from './routes/verification';
 import { errorHandler } from './middleware/errorHandler';
 import { asyncHandler } from './middleware/errorHandler';
 import { requestIdMiddleware } from './utils/requestId';
@@ -160,6 +162,8 @@ apiRouter.use('/documents', documentsRouter);
 apiRouter.use('/time', timeRouter);
 apiRouter.use('/privacy', privacyRouter);
 apiRouter.use('/user', userRouter);
+apiRouter.use('/essence', essenceRouter);
+apiRouter.use('/verification', verificationRouter);
 apiRouter.use('/dev', devRouter);
 
 app.use('/api', apiRouter);

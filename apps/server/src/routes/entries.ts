@@ -10,6 +10,7 @@ import { chapterService } from '../services/chapterService';
 import { memoryService } from '../services/memoryService';
 import { tagService } from '../services/tagService';
 import { voiceService } from '../services/voiceService';
+import { truthVerificationService } from '../services/truthVerificationService';
 import { extractTags, shouldPersistMessage } from '../utils/keywordDetector';
 import { emitDelta } from '../realtime/orchestratorEmitter';
 
@@ -248,6 +249,11 @@ router.post('/', requireAuth, checkEntryLimit, validateBody(entrySchema), async 
     incrementEntryCount(req.user!.id).catch(err => 
       logger.warn({ error: err }, 'Failed to increment entry count')
     );
+
+    // Auto-verify entry (fire and forget)
+    truthVerificationService.verifyEntry(req.user!.id, entry.id, entry)
+      .then(result => truthVerificationService.storeVerification(req.user!.id, entry.id, result))
+      .catch(err => logger.warn({ error: err, entryId: entry.id }, 'Failed to auto-verify entry'));
 
     void emitDelta('timeline.add', { entry }, req.user!.id);
 

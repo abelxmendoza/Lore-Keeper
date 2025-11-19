@@ -1,7 +1,8 @@
-import { Calendar, MapPin, Users, Tag, Sparkles, Instagram, Twitter, Linkedin, Github, Globe, Mail, Phone, UserCircle, ChevronRight } from 'lucide-react';
+import { Calendar, MapPin, Users, Tag, Sparkles, Instagram, Twitter, Linkedin, Github, Globe, Mail, Phone, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
+import { CharacterAvatar } from './CharacterAvatar';
 
 export type SocialMedia = {
   instagram?: string;
@@ -25,6 +26,7 @@ export type Character = {
   first_appearance?: string;
   summary?: string;
   tags?: string[];
+  avatar_url?: string | null;
   social_media?: SocialMedia;
   metadata?: Record<string, unknown>;
   created_at?: string;
@@ -57,10 +59,12 @@ export const CharacterProfileCard = ({ character, onClick }: CharacterProfileCar
       className="group cursor-pointer transition-all duration-300 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 bg-gradient-to-br from-black/60 via-black/40 to-black/60 border-border/50 overflow-hidden"
       onClick={onClick}
     >
-      {/* Header with Avatar Placeholder */}
+      {/* Header with Avatar */}
       <div className="relative h-16 bg-gradient-to-br from-primary/20 via-purple-500/20 to-pink-500/20 flex items-center justify-center">
         <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors" />
-        <UserCircle className="h-10 w-10 text-white/40 group-hover:text-primary/60 transition-colors relative z-10" />
+        <div className="relative z-10">
+          <CharacterAvatar url={character.avatar_url} name={character.name} size={40} />
+        </div>
         {character.status && (
           <div className="absolute top-2 right-2 z-10">
             <Badge 
