@@ -314,6 +314,7 @@ Lore Keeper seamlessly blends five personas based on context, becoming exactly w
 - Section navigation with progress indicators
 - Timeline visualization at the bottom
 - Chat interface for asking questions about the book
+- Memoir integration for reading your auto-generated biography
 
 #### ✅ **Task Engine**
 - Goal and milestone tracking
@@ -593,18 +594,27 @@ lorekeeper/
 - **OpenAI API** for AI features
 
 **Key Services:**
-- **Memory Service**: Journal entry management
-- **Chapter Service**: Story arc organization
+- **Memory Service**: Journal entry management and CRUD operations
+- **Chapter Service**: Story arc organization and summaries
 - **Character Service**: Relationship tracking with optimized batch queries
+- **Omega Chat Service**: Multi-persona AI chat with streaming (Gossip Buddy, Therapist, Historian, Strategist, Memory Bank)
 - **HQI Service**: Semantic search with embeddings (cached)
-- **Timeline Manager**: Hierarchical timeline management
+- **Timeline Manager**: Hierarchical timeline management (9-layer hierarchy)
+- **Timeline Page Service**: Timeline views, emotion intensity, highlights
 - **Truth Verification Service**: Cost-optimized fact checking with rule-based extraction
 - **Fact Extraction Service**: Rule-based pattern matching (no API calls)
 - **Tag Service**: Rule-based tag extraction with caching
 - **Embedding Service**: Cached embeddings for semantic search
-- **RAG Packet Cache**: Cached context packets for chat
+- **RAG Packet Cache**: Cached context packets for chat (5-minute TTL)
 - **Chapter Insights Cache**: Cached chapter profiles
-- **Memoir Cache**: Cached memoir outlines
+- **Memoir Service**: Memoir generation and auto-update (cached)
+- **Biography Service**: Biography generation with chatbot-style editing
+- **Autopilot Service**: Strategic guidance (daily/weekly/monthly)
+- **Task Engine Service**: Task management with Microsoft To-Do sync
+- **Orchestrator Service**: Comprehensive context orchestration
+- **Identity Service**: Identity pulse and persona tracking
+- **Essence Service**: Essence profile and evolution tracking
+- **People Places Service**: Location and character detection
 
 ### Database Schema
 
@@ -695,14 +705,29 @@ psql "your-db-url" -f migrations/your_migration.sql
 ### API Development
 
 **API Routes Structure:**
-- `/api/entries` - Journal entry CRUD
-- `/api/chapters` - Chapter management
+- `/api/entries` - Journal entry CRUD, tag suggestions, voice transcription
+- `/api/chapters` - Chapter management and summaries
 - `/api/characters` - Character management (optimized batch queries)
-- `/api/memoir/*` - Memoir operations (cached)
+- `/api/chat` - AI chat with streaming support (multi-persona)
+- `/api/memoir/*` - Memoir operations (cached, auto-update)
 - `/api/biography/*` - Biography operations (chatbot-style editor)
-- `/api/hqi/*` - Semantic search (cached embeddings)
-- `/api/timeline-hierarchy/*` - Timeline hierarchy operations (batched queries)
+- `/api/timeline` - Timeline views, emotion intensity, highlights
+- `/api/timeline-hierarchy/*` - 9-layer timeline hierarchy operations (batched queries)
 - `/api/verification/*` - Truth Seeker and fact checking (rule-based, cached)
+- `/api/hqi/*` - Semantic search (cached embeddings)
+- `/api/orchestrator/*` - Comprehensive context orchestration
+- `/api/autopilot/*` - Daily/weekly/monthly strategic guidance
+- `/api/tasks` - Task management with Microsoft To-Do integration
+- `/api/insights` - AI insights and predictions
+- `/api/identity` - Identity pulse and persona tracking
+- `/api/essence` - Essence profile and evolution tracking
+- `/api/locations` - Location tracking and visit history
+- `/api/persona` - Persona state management
+- `/api/evolution` - Evolution insights
+- `/api/documents` - Document upload and language style
+- `/api/privacy` - Privacy settings and data export
+- `/api/subscription` - Subscription management
+- `/api/dev` - Development utilities (dummy data population)
 
 **See `BACKEND_FRONTEND_MAPPING.md`** for complete API documentation.
 
