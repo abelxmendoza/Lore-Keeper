@@ -17,7 +17,7 @@
 
 ## What is Lore Keeper?
 
-**Lore Keeper** is an intelligent journaling platform that helps you capture, organize, and understand your life story. Think of it as a personal AI assistant that remembers everything, finds patterns in your experiences, and helps you write your memoir—all while maintaining perfect continuity and context.
+**Lore Keeper** is an intelligent journaling platform that helps you capture, organize, and understand your life story. Think of it as a personal AI assistant that remembers everything, finds patterns in your experiences, and helps you write your biography—all while maintaining perfect continuity and context.
 
 ### For Everyone (Non-Technical Users)
 
@@ -27,7 +27,7 @@
 - **🧠 AI Memory**: Your AI assistant remembers everything you've written and can answer questions about your past experiences
 - **👥 Track Relationships**: Automatically identifies people and places in your entries, building a network of your relationships
 - **📊 Visual Timeline**: See your life story unfold chronologically with beautiful visualizations
-- **📚 Build Your Memoir**: Transform your journal entries into a polished memoir with AI assistance
+- **📚 Build Your Biography**: Transform your journal entries into a polished biography with AI assistance
 - **🔍 Smart Search**: Ask questions in natural language like "What did I do with Sarah last month?" and get instant answers
 - **✨ Discover Patterns**: Get insights about your habits, relationships, and life patterns
 
@@ -108,12 +108,14 @@ Traditional journals are hard to search, don't connect related events, and can't
 - Keyboard shortcuts (Ctrl/Cmd + 1-8) for quick navigation
 - Chat integration for updating memories through conversation
 
-#### 📖 **Memoir Editor**
-- Write and edit memoir sections
-- AI assistance for writing and editing
-- Continuity checking (Omega Canon Keeper)
-- Document upload and processing
-- Section organization and hierarchy
+#### 📖 **Biography Editor**
+- **Chatbot-style interface** - Write your biography through natural conversation
+- Simple chat interface - Just talk to AI to create, edit, and organize sections
+- Real-time streaming responses
+- Section preview sidebar showing all biography sections
+- AI-powered content generation from your journal entries
+- Automatic section organization
+- Markdown support for rich formatting
 
 #### 📍 **Location Tracking**
 - Automatic location detection from entries
@@ -145,12 +147,27 @@ Traditional journals are hard to search, don't connect related events, and can't
 - Microsoft To-Do integration
 - Task timeline links
 
-#### 🧠 **Insights & Discovery**
-- Pattern detection across your memories
-- Identity pulse tracking
-- Continuity checking
-- Drift detection
-- Memory fabric visualization
+#### 🧠 **Discovery Hub**
+- **Analytical Panels** - Toggle panels to explore different aspects of your data
+  - **Identity Pulse**: Your persona signature and emotional trajectory
+  - **Characters**: Relationship graphs and closeness trends
+  - **Saga**: Narrative arcs and story structure
+  - **Memory Fabric**: Connections between memories
+  - **Insights**: Patterns, correlations, and predictions
+  - **Autopilot**: AI life guidance and recommendations
+- Clean, organized interface with visual feedback
+- Easy panel toggling system
+
+#### 🔒 **Privacy & Security**
+- **Privacy & Security Page**: Comprehensive information about data protection
+- **Privacy Settings**: Control data retention, analytics, and sharing preferences
+- **Privacy Policy**: Full privacy policy document
+- **Terms of Service**: Required acceptance on first login
+- **Data Export**: Download all your data in JSON format (GDPR compliant)
+- **Account Deletion**: Permanently delete your account and all data
+- End-to-end encryption (TLS 1.3 in transit, AES-256 at rest)
+- Row-level security ensuring complete data isolation
+- No data selling or third-party sharing
 
 ### Technical Features
 
@@ -293,7 +310,7 @@ This creates:
 - 3 chapters spanning 2 years
 - 23 journal entries with relationships
 - 5 characters/places
-- 3 memoir sections
+- 3 biography sections
 - Sample tasks
 
 ---
@@ -309,7 +326,10 @@ lorekeeper/
 │   │   │   │   ├── chat/      # Chat interface
 │   │   │   │   ├── timeline/  # Timeline visualizations
 │   │   │   │   ├── characters/# Character management
-│   │   │   │   ├── memoir/    # Memoir editor
+│   │   │   │   ├── biography/ # Biography editor (chatbot-style)
+│   │   │   │   ├── memoir/    # Memoir editor (legacy)
+│   │   │   │   ├── discovery/ # Discovery Hub
+│   │   │   │   ├── security/  # Privacy & Security pages
 │   │   │   │   └── lorebook/  # Reading interface
 │   │   │   ├── hooks/         # React hooks
 │   │   │   ├── lib/           # Utilities
@@ -360,7 +380,8 @@ lorekeeper/
 - **Chat Interface**: Streaming AI responses with source citations
 - **Timeline Views**: Multiple visualization modes (graph, cards, hierarchy)
 - **Character System**: Relationship tracking and knowledge base
-- **Memoir Editor**: Rich text editing with AI assistance
+- **Biography Editor**: Chatbot-style interface for writing your biography
+- **Discovery Hub**: Analytical panels for exploring insights and patterns
 - **Lore Book**: Reading-optimized interface
 
 ### Backend Architecture
@@ -385,7 +406,7 @@ lorekeeper/
 - `journal_entries`: User journal entries
 - `chapters`: Story chapters and arcs
 - `characters`: People and places
-- `memoir_sections`: Memoir content
+- `memoir_sections`: Biography content (stored as memoir in database)
 - `tasks`: Goals and milestones
 - `timeline_*`: 9-layer hierarchy tables (mythos, epochs, eras, sagas, arcs, chapters, scenes, actions, microactions)
 
@@ -468,7 +489,8 @@ psql "your-db-url" -f migrations/your_migration.sql
 - `/api/entries` - Journal entry CRUD
 - `/api/chapters` - Chapter management
 - `/api/characters` - Character management
-- `/api/memoir/*` - Memoir operations
+- `/api/memoir/*` - Memoir operations (legacy)
+- `/api/biography/*` - Biography operations (chatbot-style editor)
 - `/api/hqi/*` - Semantic search
 - `/api/timeline-hierarchy/*` - Timeline hierarchy operations
 
@@ -669,7 +691,10 @@ We welcome contributions! Here's how to get started:
 - ✅ Journal entries with AI assistance
 - ✅ Character and relationship tracking
 - ✅ Timeline visualization
-- ✅ Memoir editor
+- ✅ Biography editor (chatbot-style)
+- ✅ Discovery Hub with analytical panels
+- ✅ Privacy & Security features
+- ✅ Terms of Service acceptance system
 - ✅ AI chat with context
 - ✅ Semantic search (HQI)
 - ✅ 9-layer timeline hierarchy

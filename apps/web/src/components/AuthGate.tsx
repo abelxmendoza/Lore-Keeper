@@ -5,6 +5,8 @@ import { getConfigDebug, isSupabaseConfigured, supabase } from '../lib/supabase'
 import { Logo } from './Logo';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { TermsOfServiceAgreement } from './security/TermsOfServiceAgreement';
+import { useTermsAcceptance } from '../hooks/useTermsAcceptance';
 
 const AuthScreen = ({ onEmailLogin }: { onEmailLogin: (email: string) => Promise<void> }) => {
   const [email, setEmail] = useState('');
@@ -83,12 +85,39 @@ export const AuthGate = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const { status: termsStatus, loading: termsLoading, error: termsError } = useTermsAcceptance();
 
   const isConfigured = isSupabaseConfigured();
   const debug = getConfigDebug();
   
+  // Check terms acceptance (works in both dev and production)
+  useEffect(() => {
+    if (termsStatus && !termsStatus.accepted && !termsLoading) {
+      setTermsAccepted(false);
+    } else if (termsStatus?.accepted) {
+      setTermsAccepted(true);
+    }
+  }, [termsStatus, termsLoading]);
+  
   // Bypass auth check in dev mode
   if (DEV_DISABLE_AUTH) {
+    // Show terms agreement if user hasn't accepted
+    // Show it if:
+    // 1. We have a status and it's not accepted, OR
+    // 2. We're done loading and don't have a status (API failed/timed out - default to not accepted)
+    if (!termsLoading) {
+      if (!termsStatus || !termsStatus.accepted) {
+        return <TermsOfServiceAgreement onAccept={() => {
+          setTermsAccepted(true);
+          // Refresh terms status after acceptance
+          window.location.reload();
+        }} />;
+      }
+    }
+
+    // If still loading, show a loading state or children (don't block the app)
+    // The timeout in useTermsAcceptance will handle long waits
     return <>{children}</>;
   }
 
@@ -194,6 +223,30 @@ export const AuthGate = ({ children }: { children: ReactNode }) => {
 
   if (!session) {
     return <AuthScreen onEmailLogin={handleEmailLogin} />;
+  }
+
+  // Check terms acceptance after authentication
+  useEffect(() => {
+    if (session && termsStatus && !termsStatus.accepted && !termsLoading) {
+      setTermsAccepted(false);
+    } else if (termsStatus?.accepted) {
+      setTermsAccepted(true);
+    }
+  }, [session, termsStatus, termsLoading]);
+
+  // Show terms agreement if user hasn't accepted
+  // Show it if:
+  // 1. User is authenticated, AND
+  // 2. We're done loading, AND
+  // 3. We don't have a status OR the status shows not accepted
+  if (session && !termsLoading) {
+    if (!termsStatus || !termsStatus.accepted) {
+      return <TermsOfServiceAgreement onAccept={() => {
+        setTermsAccepted(true);
+        // Refresh terms status after acceptance
+        window.location.reload();
+      }} />;
+    }
   }
 
   return <>{children}</>;

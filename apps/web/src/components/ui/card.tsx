@@ -23,6 +23,12 @@ export const CardTitle = ({ className, children, ...props }: HTMLAttributes<HTML
   </h3>
 );
 
+export const CardDescription = ({ className, children, ...props }: HTMLAttributes<HTMLParagraphElement>) => (
+  <p className={cn('text-sm text-white/60', className)} {...props}>
+    {children}
+  </p>
+);
+
 export const CardContent = ({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) => (
   <div className={cn('space-y-4 text-sm text-white/80', className)} {...props}>
     {children}

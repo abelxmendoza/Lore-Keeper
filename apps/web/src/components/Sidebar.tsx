@@ -1,13 +1,12 @@
-import { BookMarked, CalendarDays, Compass, MessageSquareText, Plus, Search, Sparkles, Users, BookOpen, MapPin, Crown } from 'lucide-react';
+import { BookMarked, CalendarDays, MessageSquareText, Plus, Search, Sparkles, Users, BookOpen, MapPin, Crown, Shield, Compass } from 'lucide-react';
 
 import { Logo } from './Logo';
 import { Button } from './ui/button';
 
 interface SidebarProps {
-  activeSurface?: 'chat' | 'timeline' | 'search' | 'characters' | 'locations' | 'memoir' | 'lorebook' | 'subscription' | 'pricing';
-  onSurfaceChange?: (surface: 'chat' | 'timeline' | 'search' | 'characters' | 'locations' | 'memoir' | 'lorebook' | 'subscription' | 'pricing') => void;
+  activeSurface?: 'chat' | 'timeline' | 'search' | 'characters' | 'locations' | 'memoir' | 'lorebook' | 'subscription' | 'pricing' | 'security' | 'privacy-settings' | 'privacy-policy' | 'discovery';
+  onSurfaceChange?: (surface: 'chat' | 'timeline' | 'search' | 'characters' | 'locations' | 'memoir' | 'lorebook' | 'subscription' | 'pricing' | 'security' | 'privacy-settings' | 'privacy-policy' | 'discovery') => void;
   onCreateChapter?: () => void;
-  onScrollToDiscovery?: () => void;
   onToggleDevMode?: () => void;
   devModeEnabled?: boolean;
 }
@@ -16,7 +15,6 @@ export const Sidebar = ({
   activeSurface,
   onSurfaceChange,
   onCreateChapter,
-  onScrollToDiscovery,
   onToggleDevMode,
   devModeEnabled
 }: SidebarProps) => (
@@ -92,7 +90,7 @@ export const Sidebar = ({
         }`}
       >
         <BookOpen className="h-4 w-4 text-primary" />
-        My Memoir Editor
+        My Biography
       </button>
       <button
         onClick={() => onSurfaceChange?.('lorebook')}
@@ -106,8 +104,12 @@ export const Sidebar = ({
         Lore Book
       </button>
       <button
-        onClick={() => onScrollToDiscovery?.()}
-        className="flex w-full items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-sm text-white/70 transition hover:border-primary hover:bg-primary/10"
+        onClick={() => onSurfaceChange?.('discovery')}
+        className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-sm transition ${
+          activeSurface === 'discovery'
+            ? 'border-primary bg-primary/10 text-white'
+            : 'border-transparent text-white/70 hover:border-primary hover:bg-primary/10'
+        }`}
       >
         <Compass className="h-4 w-4 text-primary" />
         Discovery Hub
@@ -122,6 +124,17 @@ export const Sidebar = ({
       >
         <Crown className="h-4 w-4 text-primary" />
         Subscription
+      </button>
+      <button
+        onClick={() => onSurfaceChange?.('security')}
+        className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-sm transition ${
+          activeSurface === 'security'
+            ? 'border-primary bg-primary/10 text-white'
+            : 'border-transparent text-white/70 hover:border-primary hover:bg-primary/10'
+        }`}
+      >
+        <Shield className="h-4 w-4 text-primary" />
+        Privacy & Security
       </button>
     </div>
     <div className="mt-auto">

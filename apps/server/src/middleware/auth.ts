@@ -36,8 +36,9 @@ export const authMiddleware = async (
     
     if (DEV_DISABLE_AUTH) {
       // Set a mock user for dev
+      // Use a valid UUID format for dev mode (consistent UUID for testing)
       req.user = {
-        id: 'dev-user-id',
+        id: '00000000-0000-0000-0000-000000000000', // Valid UUID format for dev
         email: 'dev@example.com',
         lastSignInAt: new Date().toISOString()
       };

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Shield, Download, Trash2, AlertTriangle, Crown } from 'lucide-react';
+import { Shield, Download, Trash2, AlertTriangle, Crown, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Switch } from '../ui/switch';
@@ -10,6 +10,10 @@ import { announceToScreenReader } from '../../lib/accessibility';
 import { PrivacyAssurance } from '../subscription/PrivacyAssurance';
 import { useSubscription } from '../../hooks/useSubscription';
 
+interface PrivacySettingsProps {
+  onBack?: () => void;
+}
+
 type PrivacySettings = {
   dataRetentionDays: number;
   allowAnalytics: boolean;
@@ -18,7 +22,7 @@ type PrivacySettings = {
   autoDeleteAfterDays: number | null;
 };
 
-export const PrivacySettings = () => {
+export const PrivacySettings = ({ onBack }: PrivacySettingsProps) => {
   const [settings, setSettings] = useState<PrivacySettings>({
     dataRetentionDays: 365,
     allowAnalytics: false,
@@ -118,6 +122,14 @@ export const PrivacySettings = () => {
 
   return (
     <div className="space-y-6" role="main" aria-label="Privacy Settings">
+      {onBack && (
+        <div className="mb-4">
+          <Button variant="outline" onClick={onBack} className="border-purple-500/50 text-purple-400 hover:bg-purple-500/20">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Privacy & Security
+          </Button>
+        </div>
+      )}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

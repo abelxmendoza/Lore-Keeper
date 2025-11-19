@@ -5,6 +5,7 @@ import multer from 'multer';
 import { requireAuth, type AuthenticatedRequest } from '../middleware/auth';
 import { checkEntryLimit } from '../middleware/subscription';
 import { incrementEntryCount } from '../services/usageTracking';
+import { validateQuery, validateBody } from '../middleware/validateRequest';
 import { chapterService } from '../services/chapterService';
 import { memoryService } from '../services/memoryService';
 import { tagService } from '../services/tagService';

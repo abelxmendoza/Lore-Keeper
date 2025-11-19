@@ -1,8 +1,7 @@
-import { useMemo, useRef, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { CalendarRange, PenLine, PlusCircle, Search as SearchIcon, Wand2 } from 'lucide-react';
 
 import { AuthGate } from '../components/AuthGate';
-import { AutopilotPanel } from '../components/AutopilotPanel';
 import { AgentPanel } from '../components/AgentPanel';
 import { ChaptersList } from '../components/ChaptersList';
 import { ChapterViewer } from '../components/ChapterViewer';
@@ -10,12 +9,8 @@ import { CreateChapterModal } from '../components/CreateChapterModal';
 import { EntryList } from '../components/EntryList';
 import { EvolutionPanel } from '../components/EvolutionPanel';
 import { MemoryExplorer } from '../components/memory-explorer/MemoryExplorer';
-import { IdentityPulsePanel } from '../components/identity/IdentityPulsePanel';
-import { InsightsPanel } from '../components/InsightsPanel';
 import { Logo } from '../components/Logo';
-import { MemoryFabricPanel } from '../components/fabric/MemoryFabricPanel';
 import { MemoryTimeline } from '../components/MemoryTimeline';
-import { SagaScreen } from '../components/saga/SagaScreen';
 import { Sidebar } from '../components/Sidebar';
 import { TagCloud } from '../components/TagCloud';
 import { TaskEnginePanel } from '../components/TaskEnginePanel';
@@ -29,15 +24,18 @@ import { ChatFirstInterface } from '../components/chat/ChatFirstInterface';
 import { CharacterBook } from '../components/characters/CharacterBook';
 import { Locations } from '../components/locations/Locations';
 import { ImprovedTimelineView } from '../components/timeline/ImprovedTimelineView';
-import { MemoirEditor } from '../components/memoir/MemoirEditor';
+import { BiographyEditor } from '../components/biography/BiographyEditor';
 import { LoreBook } from '../components/lorebook/LoreBook';
-import { PopulateDummyData } from '../components/dev/PopulateDummyData';
 import { ChapterCreationChatbot } from '../components/chapters/ChapterCreationChatbot';
 import { TimelineHierarchyPanel } from '../components/timeline-hierarchy/TimelineHierarchyPanel';
 import { TimelinePage } from '../components/timeline/TimelinePage';
 import { SubscriptionManagement } from '../components/subscription/SubscriptionManagement';
 import { TrialBanner } from '../components/subscription/TrialBanner';
 import { PricingPage } from '../components/subscription/PricingPage';
+import { PrivacySecurityPage } from '../components/security/PrivacySecurityPage';
+import { PrivacySettings } from '../components/security/PrivacySettings';
+import { PrivacyPolicy } from '../components/security/PrivacyPolicy';
+import { DiscoveryHub } from '../components/discovery/DiscoveryHub';
 
 const formatRange = (days = 7) => {
   const end = new Date();
@@ -50,7 +48,7 @@ const formatRange = (days = 7) => {
   };
 };
 
-type SurfaceKey = 'chat' | 'timeline' | 'search' | 'characters' | 'locations' | 'memoir' | 'lorebook' | 'subscription' | 'pricing';
+type SurfaceKey = 'chat' | 'timeline' | 'search' | 'characters' | 'locations' | 'memoir' | 'lorebook' | 'subscription' | 'pricing' | 'security' | 'privacy-settings' | 'privacy-policy' | 'discovery';
 
 
 
@@ -109,33 +107,8 @@ const AppContent = () => {
     window.addEventListener('navigate', handleNavigate as EventListener);
     return () => window.removeEventListener('navigate', handleNavigate as EventListener);
   }, []);
-  const [insightsLoading, setInsightsLoading] = useState(false);
-  const [panelsOpen, setPanelsOpen] = useState({
-    identity: false,
-    characters: false,
-    saga: false,
-    continuity: false,
-    fabric: false,
-    insights: false,
-    autopilot: false
-  });
-
-  const loadInsights = async () => {
-    setInsightsLoading(true);
-    try {
-      const result = await fetchJson<{ insights?: any }>('/api/insights/recent');
-      setInsights(result.insights || result);
-    } catch (error) {
-      console.error('Failed to load insights:', error);
-      setInsights(null);
-    } finally {
-      setInsightsLoading(false);
-    }
-  };
-  const [showDiscovery, setShowDiscovery] = useState(false);
   const [devMode, setDevMode] = useState(false);
   const [showChapterChatbot, setShowChapterChatbot] = useState(false);
-  const discoveryRef = useRef<HTMLDivElement | null>(null);
 
   const handleSummary = async () => {
     setGeneratingSummary(true);
@@ -170,9 +143,6 @@ const AppContent = () => {
   };
 
 
-  const togglePanel = (panel: keyof typeof panelsOpen) => {
-    setPanelsOpen((prev) => ({ ...prev, [panel]: !prev[panel] }));
-  };
 
   const visibleEntries = useMemo(() => (searchResults.length ? searchResults : entries).slice(0, 8), [entries, searchResults]);
 
@@ -212,7 +182,6 @@ const AppContent = () => {
         activeSurface={activeSurface}
         onSurfaceChange={setActiveSurface}
         onCreateChapter={() => setShowChapterChatbot(true)}
-        onScrollToDiscovery={() => discoveryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
         onToggleDevMode={() => setDevMode((prev) => !prev)}
         devModeEnabled={devMode}
       />
@@ -221,20 +190,6 @@ const AppContent = () => {
           <div>
             <h1 className="text-2xl font-semibold">Welcome back</h1>
             <p className="text-sm text-white/60">{entries.length} memories · {chapters.length} chapters</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <PopulateDummyData compact onSuccess={() => {
-              refreshEntries();
-              refreshChapters();
-              refreshTimeline();
-            }} />
-            <Button
-              size="sm"
-              variant={showDiscovery ? 'default' : 'outline'}
-              onClick={() => setShowDiscovery(!showDiscovery)}
-            >
-              {showDiscovery ? 'Hide' : 'Show'} Discovery
-            </Button>
           </div>
         </header>
 
@@ -255,7 +210,7 @@ const AppContent = () => {
         {activeSurface === 'locations' && <Locations />}
         {activeSurface === 'memoir' && (
           <div className="rounded-2xl border border-border/60 bg-black/40 shadow-panel min-h-[calc(100vh-12rem)]">
-            <MemoirEditor />
+            <BiographyEditor />
           </div>
         )}
         {activeSurface === 'lorebook' && (
@@ -274,56 +229,25 @@ const AppContent = () => {
             <PricingPage onSurfaceChange={(surface) => setActiveSurface(surface as SurfaceKey)} />
           </div>
         )}
-
-        {showDiscovery && (
-          <section ref={discoveryRef} className="space-y-4 rounded-2xl border border-border/60 bg-black/40 p-6 shadow-panel">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold">Discovery Hub</h2>
-                <p className="text-sm text-white/60">Explore insights, characters, continuity, and more</p>
-              </div>
-              <Button size="sm" variant="ghost" onClick={() => setShowDiscovery(false)}>
-                Hide
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {(
-                [
-                  ['identity', 'Identity'],
-                  ['characters', 'Characters'],
-                  ['saga', 'Saga'],
-                  ['fabric', 'Fabric'],
-                  ['insights', 'Insights'],
-                  ['autopilot', 'Autopilot']
-                ] as const
-              ).map(([key, label]) => (
-                <Button
-                  key={key}
-                  size="sm"
-                  variant={panelsOpen[key] ? 'default' : 'outline'}
-                  onClick={() => togglePanel(key)}
-                >
-                  {label}
-                </Button>
-              ))}
-            </div>
-            {(Object.values(panelsOpen).some(Boolean)) && (
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {panelsOpen.identity && <IdentityPulsePanel />}
-                {panelsOpen.characters && <CharacterBook />}
-                {panelsOpen.saga && <SagaScreen />}
-                {panelsOpen.fabric && <MemoryFabricPanel />}
-                {panelsOpen.insights && (
-                  <InsightsPanel
-                    insights={insights}
-                    loading={insightsLoading}
-                    onRefresh={loadInsights}
-                  />
-                )}
-                {panelsOpen.autopilot && <AutopilotPanel />}
-              </div>
-            )}
-          </section>
+        {activeSurface === 'security' && (
+          <div className="rounded-2xl border border-border/60 bg-black/40 shadow-panel min-h-[calc(100vh-4rem)] overflow-auto p-6">
+            <PrivacySecurityPage onSurfaceChange={(surface) => setActiveSurface(surface as SurfaceKey)} />
+          </div>
+        )}
+        {activeSurface === 'privacy-settings' && (
+          <div className="rounded-2xl border border-border/60 bg-black/40 shadow-panel min-h-[calc(100vh-4rem)] overflow-auto p-6">
+            <PrivacySettings onBack={() => setActiveSurface('security')} />
+          </div>
+        )}
+        {activeSurface === 'privacy-policy' && (
+          <div className="rounded-2xl border border-border/60 bg-black/40 shadow-panel min-h-[calc(100vh-4rem)] overflow-auto p-6">
+            <PrivacyPolicy onBack={() => setActiveSurface('security')} />
+          </div>
+        )}
+        {activeSurface === 'discovery' && (
+          <div className="rounded-2xl border border-border/60 bg-black/40 shadow-panel min-h-[calc(100vh-4rem)] overflow-auto p-6">
+            <DiscoveryHub />
+          </div>
         )}
 
         {devMode && (
@@ -338,7 +262,6 @@ const AppContent = () => {
               </Button>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              <PopulateDummyData />
               <AgentPanel />
             </div>
           </div>

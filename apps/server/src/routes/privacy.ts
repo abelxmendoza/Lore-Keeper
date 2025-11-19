@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { authMiddleware, type AuthenticatedRequest } from '../middleware/auth';
 import { validateBody } from '../middleware/validateRequest';
 import { logger } from '../logger';
-import { supabaseAdmin } from '../lib/supabase';
+import { supabaseAdmin } from '../lib/supabase.js';
 import { encrypt, decrypt } from '../services/encryption';
 import { asyncHandler } from '../middleware/errorHandler';
 

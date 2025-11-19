@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth, type AuthenticatedRequest } from '../middleware/auth';
 import { chapterService } from '../services/chapterService';
-import { openai } from '../lib/openai';
+import { openai } from '../lib/openai.js';
 import { config } from '../config';
 
 const router = Router();

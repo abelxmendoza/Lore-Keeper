@@ -5,6 +5,14 @@ export const fetchJson = async <T>(input: RequestInfo, init?: RequestInit): Prom
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   
+  // Get base API URL from env or default to localhost
+  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+  
+  // If input is a relative URL, prepend the API base URL
+  const url = typeof input === 'string' && input.startsWith('/') 
+    ? `${apiBaseUrl}${input}`
+    : input;
+  
   try {
     // Add CSRF token and auth headers
     const headers = addCsrfHeaders({
@@ -13,7 +21,7 @@ export const fetchJson = async <T>(input: RequestInfo, init?: RequestInit): Prom
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     });
     
-    const res = await fetch(input, {
+    const res = await fetch(url, {
       headers,
       ...init
     });

@@ -15,6 +15,9 @@ import { memoryGraphService } from './memoryGraphService';
 import { extractTags, shouldPersistMessage } from '../utils/keywordDetector';
 import { correctionService } from './correctionService';
 import { timeEngine } from './timeEngine';
+import { locationService } from './locationService';
+import { chapterService } from './chapterService';
+import { supabaseAdmin } from './supabaseClient';
 
 const openai = new OpenAI({ apiKey: config.openAiKey });
 
@@ -53,7 +56,7 @@ export type StreamingChatResponse = {
 
 class OmegaChatService {
   /**
-   * Build comprehensive RAG packet using orchestrator
+   * Build comprehensive RAG packet with ALL lore knowledge
    */
   private async buildRAGPacket(userId: string, message: string) {
     // Get full orchestrator summary with error handling
@@ -62,6 +65,76 @@ class OmegaChatService {
       orchestratorSummary = await orchestratorService.getSummary(userId);
     } catch (error) {
       logger.warn({ error }, 'Failed to get orchestrator summary, using empty');
+    }
+
+    // Fetch ALL characters from characters table (comprehensive lore)
+    let allCharacters: any[] = [];
+    try {
+      const { data: charactersData } = await supabaseAdmin
+        .from('characters')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      allCharacters = charactersData || [];
+    } catch (error) {
+      logger.debug({ error }, 'Failed to fetch all characters, continuing');
+    }
+
+    // Fetch ALL locations (comprehensive lore)
+    let allLocations: any[] = [];
+    try {
+      allLocations = await locationService.listLocations(userId);
+    } catch (error) {
+      logger.debug({ error }, 'Failed to fetch all locations, continuing');
+    }
+
+    // Fetch ALL chapters with summaries (comprehensive lore)
+    let allChapters: any[] = [];
+    try {
+      allChapters = await chapterService.listChapters(userId);
+    } catch (error) {
+      logger.debug({ error }, 'Failed to fetch all chapters, continuing');
+    }
+
+    // Fetch timeline hierarchy (eras, sagas, arcs) - comprehensive lore
+    let timelineHierarchy: any = { eras: [], sagas: [], arcs: [] };
+    try {
+      // Fetch eras
+      const { data: erasData } = await supabaseAdmin
+        .from('eras')
+        .select('*')
+        .eq('user_id', userId)
+        .order('start_date', { ascending: false });
+      
+      // Fetch sagas
+      const { data: sagasData } = await supabaseAdmin
+        .from('sagas')
+        .select('*')
+        .eq('user_id', userId)
+        .order('start_date', { ascending: false });
+      
+      // Fetch arcs
+      const { data: arcsData } = await supabaseAdmin
+        .from('arcs')
+        .select('*')
+        .eq('user_id', userId)
+        .order('start_date', { ascending: false });
+
+      timelineHierarchy = {
+        eras: erasData || [],
+        sagas: sagasData || [],
+        arcs: arcsData || []
+      };
+    } catch (error) {
+      logger.debug({ error }, 'Failed to fetch timeline hierarchy, continuing');
+    }
+
+    // Fetch all people/places entities (comprehensive lore)
+    let allPeoplePlaces: any[] = [];
+    try {
+      allPeoplePlaces = await peoplePlacesService.listEntities(userId);
+    } catch (error) {
+      logger.debug({ error }, 'Failed to fetch people/places, continuing');
     }
 
     // Get HQI semantic search results with error handling
@@ -126,34 +199,71 @@ class OmegaChatService {
       logger.warn({ error }, 'Failed to extract dates, continuing without');
     }
 
-    // Build sources array
+    // Build comprehensive sources array including ALL lore
     const sources: ChatSource[] = [
-      ...orchestratorSummary.timeline.events.slice(0, 10).map(e => ({
+      // Timeline entries
+      ...orchestratorSummary.timeline.events.slice(0, 15).map((e: any) => ({
         type: 'entry' as const,
         id: e.id,
         title: e.summary || e.content?.substring(0, 50) || 'Untitled',
         snippet: e.summary || e.content?.substring(0, 150),
         date: e.date
       })),
-      ...orchestratorSummary.characters.slice(0, 5).map(c => ({
+      // ALL characters (comprehensive lore)
+      ...allCharacters.slice(0, 20).map((char: any) => ({
         type: 'character' as const,
-        id: (c.character as any).id,
-        title: (c.character as any).name || 'Unknown',
-        snippet: (c.character as any).summary
+        id: char.id,
+        title: char.name || 'Unknown',
+        snippet: char.summary || `${char.role || ''} ${char.archetype || ''}`.trim() || 'Character',
+        date: char.first_appearance
       })),
-      ...orchestratorSummary.timeline.arcs.slice(0, 3).map((arc: any) => ({
+      // ALL locations (comprehensive lore)
+      ...allLocations.slice(0, 15).map((loc: any) => ({
+        type: 'location' as const,
+        id: loc.id,
+        title: loc.name || 'Unknown Location',
+        snippet: `Visited ${loc.visitCount || 0} times`,
+        date: loc.firstVisited
+      })),
+      // ALL chapters (comprehensive lore)
+      ...allChapters.slice(0, 10).map((ch: any) => ({
         type: 'chapter' as const,
-        id: arc.id || 'unknown',
-        title: arc.title || 'Untitled Chapter',
+        id: ch.id,
+        title: ch.title || 'Untitled Chapter',
+        snippet: ch.summary || ch.description || '',
+        date: ch.start_date
+      })),
+      // Timeline hierarchy (eras, sagas, arcs)
+      ...timelineHierarchy.eras.slice(0, 5).map((era: any) => ({
+        type: 'era' as const,
+        id: era.id,
+        title: era.title || 'Untitled Era',
+        snippet: era.description || '',
+        date: era.start_date
+      })),
+      ...timelineHierarchy.sagas.slice(0, 5).map((saga: any) => ({
+        type: 'saga' as const,
+        id: saga.id,
+        title: saga.title || 'Untitled Saga',
+        snippet: saga.description || '',
+        date: saga.start_date
+      })),
+      ...timelineHierarchy.arcs.slice(0, 5).map((arc: any) => ({
+        type: 'arc' as const,
+        id: arc.id,
+        title: arc.title || 'Untitled Arc',
+        snippet: arc.description || '',
         date: arc.start_date
       })),
-      ...hqiResults.map(r => ({
+      // HQI results
+      ...hqiResults.map((r: any) => ({
         type: 'hqi' as const,
         id: r.node_id,
         title: r.title,
         snippet: r.snippet,
         date: r.timestamp
       })),
+      // Memory Fabric neighbors
       ...fabricNeighbors
     ];
 
@@ -163,7 +273,13 @@ class OmegaChatService {
       relatedEntries,
       fabricNeighbors,
       extractedDates,
-      sources
+      sources,
+      // Comprehensive lore data
+      allCharacters,
+      allLocations,
+      allChapters,
+      timelineHierarchy,
+      allPeoplePlaces
     };
   }
 
@@ -339,60 +455,131 @@ class OmegaChatService {
   }
 
   /**
-   * Build comprehensive system prompt with all context
+   * Build comprehensive system prompt with ALL lore knowledge
    */
   private buildSystemPrompt(
     orchestratorSummary: any,
     connections: string[],
     continuityWarnings: string[],
     strategicGuidance: string | null,
-    sources: ChatSource[]
+    sources: ChatSource[],
+    loreData?: {
+      allCharacters?: any[];
+      allLocations?: any[];
+      allChapters?: any[];
+      timelineHierarchy?: any;
+      allPeoplePlaces?: any[];
+    }
   ): string {
     const timelineSummary = orchestratorSummary.timeline.events
-      .slice(0, 15)
+      .slice(0, 20)
       .map((e: any) => `Date: ${e.date}\n${e.summary || e.content?.substring(0, 100)}`)
       .join('\n---\n');
 
-    const charactersList = orchestratorSummary.characters
-      .slice(0, 10)
-      .map((c: any) => `${c.character.name}${c.character.role ? ` (${c.character.role})` : ''}`)
-      .join(', ');
+    // Build comprehensive character knowledge
+    const charactersKnowledge = loreData?.allCharacters?.length
+      ? loreData.allCharacters.map((char: any) => {
+          const details = [
+            char.name,
+            char.role ? `Role: ${char.role}` : '',
+            char.archetype ? `Archetype: ${char.archetype}` : '',
+            char.summary ? `Summary: ${char.summary.substring(0, 100)}` : '',
+            char.first_appearance ? `First appeared: ${char.first_appearance}` : '',
+            char.tags?.length ? `Tags: ${char.tags.join(', ')}` : ''
+          ].filter(Boolean).join(' | ');
+          return `- ${details}`;
+        }).join('\n')
+      : orchestratorSummary.characters
+          .slice(0, 10)
+          .map((c: any) => `${c.character.name}${c.character.role ? ` (${c.character.role})` : ''}`)
+          .join(', ');
 
-    const chaptersList = orchestratorSummary.timeline.arcs
-      .slice(0, 5)
-      .map((arc: any) => `${arc.title} (${arc.start_date}${arc.end_date ? ` - ${arc.end_date}` : ''})`)
-      .join('\n');
+    // Build comprehensive location knowledge
+    const locationsKnowledge = loreData?.allLocations?.length
+      ? loreData.allLocations.map((loc: any) => {
+          return `- ${loc.name}: Visited ${loc.visitCount || 0} times${loc.firstVisited ? ` (first: ${loc.firstVisited})` : ''}${loc.lastVisited ? ` (last: ${loc.lastVisited})` : ''}`;
+        }).join('\n')
+      : '';
 
-    return `You are an AI Life Guidance assistant integrated into Lore Keeper. Your role is to:
+    // Build comprehensive chapter knowledge
+    const chaptersKnowledge = loreData?.allChapters?.length
+      ? loreData.allChapters.map((ch: any) => {
+          return `- ${ch.title} (${ch.start_date}${ch.end_date ? ` - ${ch.end_date}` : ' - ongoing'}): ${ch.summary || ch.description || 'No summary'}`;
+        }).join('\n')
+      : orchestratorSummary.timeline.arcs
+          .slice(0, 5)
+          .map((arc: any) => `${arc.title} (${arc.start_date}${arc.end_date ? ` - ${arc.end_date}` : ''})`)
+          .join('\n');
 
-1. **Listen and Reflect**: Provide empathetic, thoughtful responses that show you understand what the user is sharing
-2. **Make Connections**: Point out patterns, themes, and connections to their past entries
-3. **Track the Story**: Help summarize their journey, noting key moments and evolution
-4. **Update Knowledge**: Automatically extract and track dates, times, people, places, and events
-5. **Check Continuity**: Watch for inconsistencies, conflicts, or contradictions in their story
-6. **Provide Strategy**: Offer actionable guidance based on their patterns and current situation
-7. **Maintain Timeline**: Help organize their memories chronologically and thematically
+    // Build timeline hierarchy knowledge
+    const timelineHierarchyKnowledge = loreData?.timelineHierarchy
+      ? [
+          loreData.timelineHierarchy.eras?.length
+            ? `Eras:\n${loreData.timelineHierarchy.eras.map((e: any) => `  - ${e.title} (${e.start_date}${e.end_date ? ` - ${e.end_date}` : ''})`).join('\n')}`
+            : '',
+          loreData.timelineHierarchy.sagas?.length
+            ? `Sagas:\n${loreData.timelineHierarchy.sagas.map((s: any) => `  - ${s.title} (${s.start_date}${s.end_date ? ` - ${s.end_date}` : ''})`).join('\n')}`
+            : '',
+          loreData.timelineHierarchy.arcs?.length
+            ? `Arcs:\n${loreData.timelineHierarchy.arcs.map((a: any) => `  - ${a.title} (${a.start_date}${a.end_date ? ` - ${a.end_date}` : ''})`).join('\n')}`
+            : ''
+        ].filter(Boolean).join('\n\n')
+      : '';
+
+    // Build identity knowledge
+    const identityKnowledge = orchestratorSummary.identity
+      ? `Identity Motifs: ${(orchestratorSummary.identity.identity as any)?.motifs?.join(', ') || 'None'}\nEmotional Slope: ${(orchestratorSummary.identity.identity as any)?.emotional_slope || 'Neutral'}`
+      : '';
+
+    // Build continuity knowledge
+    const continuityKnowledge = orchestratorSummary.continuity
+      ? `Canonical Facts: ${orchestratorSummary.continuity.canonical?.length || 0}\nConflicts: ${orchestratorSummary.continuity.conflicts?.length || 0}`
+      : '';
+
+    return `You are an AI Life Guidance assistant integrated into Lore Keeper. You have COMPLETE ACCESS to ALL of the user's lore - their entire life story, all characters, locations, chapters, timeline, and memories.
+
+**YOUR KNOWLEDGE BASE - YOU KNOW EVERYTHING ABOUT THE USER'S LORE:**
+
+**CHARACTERS (${loreData?.allCharacters?.length || orchestratorSummary.characters.length} total):**
+${charactersKnowledge || 'No characters tracked yet.'}
+
+${locationsKnowledge ? `**LOCATIONS (${loreData.allLocations.length} total):**\n${locationsKnowledge}\n\n` : ''}
+**CHAPTERS & STORY ARCS:**
+${chaptersKnowledge || 'No chapters yet.'}
+
+${timelineHierarchyKnowledge ? `**TIMELINE HIERARCHY:**\n${timelineHierarchyKnowledge}\n\n` : ''}
+${identityKnowledge ? `**IDENTITY:**\n${identityKnowledge}\n\n` : ''}
+${continuityKnowledge ? `**CONTINUITY:**\n${continuityKnowledge}\n\n` : ''}
+
+**Your Role**:
+1. **Know Everything**: You have access to ALL their lore - characters, locations, timeline, chapters, memories. Reference specific details when relevant.
+2. **Make Deep Connections**: Connect current conversations to past events, characters, locations, and chapters. Show you remember their story.
+3. **Track the Narrative**: Help them understand their journey, noting character arcs, location patterns, and chapter themes.
+4. **Maintain Continuity**: Reference specific characters by name, locations by name, chapters by title. Show you know their world.
+5. **Provide Context**: When they mention a character, location, or event, reference related memories and timeline context.
+6. **Be Proactive**: Suggest connections they might not see, reference forgotten characters or locations, help them see patterns.
 
 **Your Style**:
-- Conversational and warm, like ChatGPT but focused on life guidance
-- Reference specific dates and past entries when relevant (use format: "From your timeline, [Month Year]")
-- Make connections between different periods of their life
-- Offer strategic insights based on patterns you notice
-- Be proactive about updating their timeline and memoir
-- Show uncertainty when unsure rather than guessing
+- Conversational and warm, like ChatGPT but deeply knowledgeable about their lore
+- Reference specific characters, locations, and chapters by name when relevant
+- Use format: "From your timeline, [Month Year]" or "In [Chapter Name]" or "When you were at [Location]"
+- Show you remember their story: "You mentioned [Character] before in [Context]"
+- Make connections: "This reminds me of when you [past event] at [location] with [character]"
+- Reference timeline hierarchy: "During the [Era/Saga/Arc] period..."
+- Be specific: Use actual names, dates, and details from their lore
 
 **Current Context**:
-${chaptersList ? `Active Chapters:\n${chaptersList}\n\n` : ''}
-${charactersList ? `Characters: ${charactersList}\n\n` : ''}
 ${connections.length > 0 ? `Connections Found:\n${connections.join('\n')}\n\n` : ''}
 ${continuityWarnings.length > 0 ? `⚠️ Continuity Warnings:\n${continuityWarnings.join('\n')}\n\n` : ''}
 ${strategicGuidance ? `${strategicGuidance}\n\n` : ''}
 
-**Relevant Timeline Entries**:
+**Recent Timeline Entries** (${orchestratorSummary.timeline.events.length} total entries):
 ${timelineSummary || 'No previous entries yet.'}
 
-**Available Sources** (reference these in your response):
-${sources.slice(0, 10).map((s, i) => `${i + 1}. [${s.type}] ${s.title}${s.date ? ` (${new Date(s.date).toLocaleDateString()})` : ''}`).join('\n')}`;
+**Available Sources** (${sources.length} total - reference these in your response):
+${sources.slice(0, 15).map((s, i) => `${i + 1}. [${s.type}] ${s.title}${s.date ? ` (${new Date(s.date).toLocaleDateString()})` : ''}${s.snippet ? ` - ${s.snippet.substring(0, 50)}` : ''}`).join('\n')}
+
+**IMPORTANT**: You know ALL their lore. Reference specific characters, locations, chapters, and timeline events by name. Show deep knowledge of their story.`;
   }
 
   /**
@@ -415,7 +602,12 @@ ${sources.slice(0, 10).map((s, i) => `${i + 1}. [${s.type}] ${s.title}${s.date ?
         sources: [],
         extractedDates: [],
         relatedEntries: [],
-        fabricNeighbors: []
+        fabricNeighbors: [],
+        allCharacters: [],
+        allLocations: [],
+        allChapters: [],
+        timelineHierarchy: { eras: [], sagas: [], arcs: [] },
+        allPeoplePlaces: []
       };
     }
     
@@ -445,13 +637,20 @@ ${sources.slice(0, 10).map((s, i) => `${i + 1}. [${s.type}] ${s.title}${s.date ?
       logger.debug({ error }, 'Failed to get strategic guidance, continuing without');
     }
 
-    // Build system prompt
+    // Build system prompt with comprehensive lore
     const systemPrompt = this.buildSystemPrompt(
       orchestratorSummary,
       connections,
       continuityWarnings,
       strategicGuidance,
-      sources
+      sources,
+      {
+        allCharacters: ragPacket.allCharacters,
+        allLocations: ragPacket.allLocations,
+        allChapters: ragPacket.allChapters,
+        timelineHierarchy: ragPacket.timelineHierarchy,
+        allPeoplePlaces: ragPacket.allPeoplePlaces
+      }
     );
 
     // Prepare messages
@@ -537,13 +736,20 @@ ${sources.slice(0, 10).map((s, i) => `${i + 1}. [${s.type}] ${s.title}${s.date ?
     // Get strategic guidance
     const strategicGuidance = await this.getStrategicGuidance(userId, message);
 
-    // Build system prompt
+    // Build system prompt with comprehensive lore
     const systemPrompt = this.buildSystemPrompt(
       orchestratorSummary,
       connections,
       continuityWarnings,
       strategicGuidance,
-      sources
+      sources,
+      {
+        allCharacters: ragPacket.allCharacters,
+        allLocations: ragPacket.allLocations,
+        allChapters: ragPacket.allChapters,
+        timelineHierarchy: ragPacket.timelineHierarchy,
+        allPeoplePlaces: ragPacket.allPeoplePlaces
+      }
     );
 
     // Generate response
