@@ -976,20 +976,27 @@ We welcome contributions! Here's how to get started:
 ### Current Features (v0.1.0)
 - ✅ **Automatic Biography Generation** ⭐ - Your biography writes itself from journal entries
 - ✅ **Automatic Timeline Creation** ⭐ - Your timeline builds itself automatically from journal entries
-- ✅ Journal entries with AI assistance
+- ✅ **Multi-Persona AI Chat** ⭐ - Gossip Buddy, Therapist, Historian, Strategist, Memory Bank
+- ✅ Journal entries with AI assistance (full CRUD)
 - ✅ Rule-based tag suggestions (cost-optimized, cached)
-- ✅ Voice memo recording and transcription
-- ✅ Character and relationship tracking (optimized batch queries)
-- ✅ Auto-generated character avatars
-- ✅ Timeline visualization with multiple view modes (graph, cards, chapters)
+- ✅ Voice memo recording and transcription (OpenAI Whisper)
+- ✅ Character and relationship tracking (optimized batch queries, relationship graphs)
+- ✅ Auto-generated character avatars (DiceBear API)
+- ✅ Timeline visualization with multiple view modes (graph, cards, chapters, overview)
 - ✅ Biography editor (chatbot-style) for refining auto-generated content
-- ✅ Discovery Hub with analytical panels
+- ✅ Discovery Hub with 8 analytical panels (Identity, Characters, Saga, Fabric, Insights, Autopilot, Soul, Truth)
 - ✅ Truth Seeker & Fact Checking system (cost-optimized, rule-based)
-- ✅ Privacy & Security features
+- ✅ Memory Explorer with semantic search (HQI)
+- ✅ Task Engine with Microsoft To-Do integration
+- ✅ Autopilot strategic guidance (daily/weekly/monthly)
+- ✅ Location tracking with visit history
+- ✅ Chapter management with AI summaries
+- ✅ Lore Book reading interface
+- ✅ Privacy & Security features (data export, account deletion)
 - ✅ Terms of Service acceptance system
-- ✅ AI chat with context (cached RAG packets)
-- ✅ Semantic search (HQI) with cached embeddings
-- ✅ Keyboard shortcuts (Cmd+K, Cmd+N)
+- ✅ Subscription management
+- ✅ Onboarding wizard
+- ✅ Keyboard shortcuts (Cmd+K, Cmd+N, Ctrl/Cmd + 1-9)
 - ✅ Accessibility features (ARIA labels, skip links)
 - ✅ Virtual scrolling for performance
 - ✅ Skeleton loaders for better UX
