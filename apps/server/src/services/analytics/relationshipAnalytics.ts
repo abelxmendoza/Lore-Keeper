@@ -181,7 +181,7 @@ export class RelationshipAnalyticsModule extends BaseAnalyticsModule {
         return [];
       }
 
-      return (data || []).map(char => ({
+      return (data || []).map((char: any) => ({
         id: char.id,
         name: char.name,
         first_seen: char.first_appearance,
@@ -939,7 +939,7 @@ export class RelationshipAnalyticsModule extends BaseAnalyticsModule {
 
         if (!arcId) continue;
 
-        const arc = arcs.find(a => a.id === arcId);
+        const arc = arcs.find((a: any) => a.id === arcId);
         if (!arc) continue;
 
         for (const character of characters) {
