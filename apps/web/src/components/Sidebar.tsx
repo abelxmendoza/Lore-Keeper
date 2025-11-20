@@ -17,7 +17,9 @@ export const Sidebar = ({
   onCreateChapter,
   onToggleDevMode,
   devModeEnabled
-}: SidebarProps) => (
+}: SidebarProps) => {
+
+  return (
   <aside className="hidden w-64 flex-col border-r border-border/60 bg-black/20 p-6 text-white lg:flex">
     <div className="mb-6">
       <Logo size="lg" showText={true} />
@@ -173,4 +175,5 @@ export const Sidebar = ({
       </div>
     </div>
   </aside>
-);
+  );
+};

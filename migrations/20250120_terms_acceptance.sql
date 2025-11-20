@@ -28,9 +28,12 @@ create index if not exists terms_acceptance_accepted_at_idx on public.terms_acce
 alter table public.terms_acceptance enable row level security;
 
 -- RLS Policies
+-- Drop existing policies if they exist (idempotent migration)
+drop policy if exists terms_acceptance_owner_select on public.terms_acceptance;
 create policy terms_acceptance_owner_select on public.terms_acceptance
   for select using (auth.uid() = user_id);
 
+drop policy if exists terms_acceptance_owner_insert on public.terms_acceptance;
 create policy terms_acceptance_owner_insert on public.terms_acceptance
   for insert with check (auth.uid() = user_id);
 

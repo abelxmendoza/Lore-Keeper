@@ -76,8 +76,21 @@ export function requireRole(...allowedRoles: UserRole[]) {
 
 /**
  * Check if user is admin
+ * In development mode, allow access for testing
  */
-export const requireAdmin = requireRole('admin', 'developer');
+export const requireAdmin = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  // Allow access in development mode for testing
+  if (config.apiEnv === 'dev' || config.apiEnv === 'development') {
+    return next();
+  }
+  
+  // In production, require admin role
+  return requireRole('admin', 'developer')(req, res, next);
+};
 
 /**
  * Check if dev console access is allowed

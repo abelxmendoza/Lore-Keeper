@@ -3,12 +3,12 @@ import { BookOpen, Bot, Send, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
-import { fetchJson } from '../../lib/api';
 import { useChatStream } from '../../hooks/useChatStream';
 import { MarkdownRenderer } from '../chat/MarkdownRenderer';
 import { useLoreNavigatorData } from '../../hooks/useLoreNavigatorData';
 import { LoreNavigator, type SelectedItem } from './LoreNavigator';
 import { LoreContentViewer } from './LoreContentViewer';
+import { TruthSeekerPanel } from '../discovery/TruthSeekerPanel';
 
 type BiographyMessage = {
   id: string;
@@ -180,7 +180,7 @@ export const BiographyEditor = () => {
       // Arrow keys to navigate through items
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
-        const allItems: Array<{ type: SelectedItem['type']; id: string }> = [
+        const allItems: Array<{ type: 'biography' | 'character' | 'location' | 'chapter'; id: string }> = [
           ...data.biography.map(s => ({ type: 'biography' as const, id: s.id })),
           ...data.characters.map(c => ({ type: 'character' as const, id: c.id })),
           ...data.locations.map(l => ({ type: 'location' as const, id: l.id })),
@@ -228,135 +228,142 @@ export const BiographyEditor = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Navigator */}
-        <div className="w-64 flex-shrink-0">
-          {dataLoading ? (
-            <div className="h-full flex items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            </div>
-          ) : (
-            <LoreNavigator
-              data={data}
-              selectedItem={selectedItem}
-              onSelectItem={setSelectedItem}
-            />
-          )}
-        </div>
-
-        {/* Center - Content Viewer */}
-        <div className="flex-1 border-r border-border/50">
-          {dataLoading ? (
-            <div className="h-full flex items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            </div>
-          ) : (
-            <LoreContentViewer
-              data={data}
-              selectedItem={selectedItem}
-              onEdit={handleEdit}
-            />
-          )}
-        </div>
-
-        {/* Right Sidebar - Chat Interface */}
-        <div className="w-96 flex flex-col border-l border-border/50 bg-black/20">
-          {/* Chat Header */}
-          <div className="border-b border-border/50 p-4 bg-black/40">
-            <div className="flex items-center gap-2">
-              <Bot className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold text-white">AI Assistant</h3>
-            </div>
-            <p className="text-xs text-white/60 mt-1">
-              {selectedItem 
-                ? `Editing: ${selectedItem.type === 'biography' ? data.biography.find(s => s.id === selectedItem.id)?.title : 
-                           selectedItem.type === 'character' ? data.characters.find(c => c.id === selectedItem.id)?.name :
-                           selectedItem.type === 'location' ? data.locations.find(l => l.id === selectedItem.id)?.name :
-                           data.chapters.find(c => c.id === selectedItem.id)?.title}`
-                : 'Chat to create, edit, or organize your lore'}
-            </p>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex overflow-hidden min-h-0">
+          {/* Left Sidebar - Navigator */}
+          <div className="w-64 flex-shrink-0">
+            {dataLoading ? (
+              <div className="h-full flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : (
+              <LoreNavigator
+                data={data}
+                selectedItem={selectedItem}
+                onSelectItem={setSelectedItem}
+              />
+            )}
           </div>
 
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex gap-3 ${
-                  message.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
-              >
-                {message.role === 'assistant' && (
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Bot className="h-4 w-4 text-primary" />
-                  </div>
-                )}
-                <Card
-                  className={`max-w-[80%] ${
-                    message.role === 'user'
-                      ? 'bg-primary/10 border-primary/30'
-                      : 'bg-black/40 border-border/50'
+          {/* Center - Content Viewer */}
+          <div className="flex-1 border-r border-border/50">
+            {dataLoading ? (
+              <div className="h-full flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : (
+              <LoreContentViewer
+                data={data}
+                selectedItem={selectedItem}
+                onEdit={handleEdit}
+              />
+            )}
+          </div>
+
+          {/* Right Sidebar - Chat Interface */}
+          <div className="w-96 flex flex-col border-l border-border/50 bg-black/20">
+            {/* Chat Header */}
+            <div className="border-b border-border/50 p-4 bg-black/40">
+              <div className="flex items-center gap-2">
+                <Bot className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-white">AI Assistant</h3>
+              </div>
+              <p className="text-xs text-white/60 mt-1">
+                {selectedItem 
+                  ? `Editing: ${selectedItem.type === 'biography' ? data.biography.find(s => s.id === selectedItem.id)?.title : 
+                             selectedItem.type === 'character' ? data.characters.find(c => c.id === selectedItem.id)?.name :
+                             selectedItem.type === 'location' ? data.locations.find(l => l.id === selectedItem.id)?.name :
+                             data.chapters.find(c => c.id === selectedItem.id)?.title}`
+                  : 'Chat to create, edit, or organize your lore'}
+              </p>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex gap-3 ${
+                    message.role === 'user' ? 'justify-end' : 'justify-start'
                   }`}
                 >
-                  <CardContent className="p-4">
-                    <div className="prose prose-invert max-w-none">
-                      <MarkdownRenderer content={message.content || '...'} />
+                  {message.role === 'assistant' && (
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Bot className="h-4 w-4 text-primary" />
                     </div>
-                    {message.id === streamingMessageId && (
-                      <div className="mt-2 flex items-center gap-2 text-xs text-white/50">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        <span>Writing...</span>
+                  )}
+                  <Card
+                    className={`max-w-[80%] ${
+                      message.role === 'user'
+                        ? 'bg-primary/10 border-primary/30'
+                        : 'bg-black/40 border-border/50'
+                    }`}
+                  >
+                    <CardContent className="p-4">
+                      <div className="prose prose-invert max-w-none">
+                        <MarkdownRenderer content={message.content || '...'} />
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-                {message.role === 'user' && (
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                    <BookOpen className="h-4 w-4 text-primary" />
-                  </div>
-                )}
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
+                      {message.id === streamingMessageId && (
+                        <div className="mt-2 flex items-center gap-2 text-xs text-white/50">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <span>Writing...</span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                  {message.role === 'user' && (
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                      <BookOpen className="h-4 w-4 text-primary" />
+                    </div>
+                  )}
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
 
-          {/* Input */}
-          <div className="border-t border-border/50 p-4 bg-black/40">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSend();
-              }}
-              className="flex gap-2"
-            >
-              <Textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={selectedItem 
-                  ? `Edit ${selectedItem.type}...`
-                  : "Ask me to create, edit, or organize your lore..."}
-                className="flex-1 bg-black/60 border-border/50 text-white resize-none"
-                rows={3}
-                disabled={loading || isStreaming}
-              />
-              <Button
-                type="submit"
-                disabled={!input.trim() || loading || isStreaming}
-                className="self-end"
+            {/* Input */}
+            <div className="border-t border-border/50 p-4 bg-black/40">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSend();
+                }}
+                className="flex gap-2"
               >
-                {loading || isStreaming ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
-            </form>
-            <p className="text-xs text-white/40 mt-2">
-              Press Enter to send, Shift+Enter for new line
-            </p>
+                <Textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={selectedItem 
+                    ? `Edit ${selectedItem.type}...`
+                    : "Ask me to create, edit, or organize your lore..."}
+                  className="flex-1 bg-black/60 border-border/50 text-white resize-none"
+                  rows={3}
+                  disabled={loading || isStreaming}
+                />
+                <Button
+                  type="submit"
+                  disabled={!input.trim() || loading || isStreaming}
+                  className="self-end"
+                >
+                  {loading || isStreaming ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
+              </form>
+              <p className="text-xs text-white/40 mt-2">
+                Press Enter to send, Shift+Enter for new line
+              </p>
+            </div>
           </div>
+        </div>
+
+        {/* Truth Seeker Panel - Always Visible at Bottom */}
+        <div className="flex-shrink-0 border-t border-border/50 bg-black/40 p-4 max-h-[600px] overflow-y-auto">
+          <TruthSeekerPanel />
         </div>
       </div>
     </div>

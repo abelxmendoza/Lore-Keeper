@@ -63,6 +63,7 @@ import { verificationRouter } from './routes/verification';
 import { timelineV2Router } from './routes/timelineV2';
 import { memoryEngineRouter } from './routes/memoryEngine';
 import { knowledgeGraphRouter } from './routes/knowledgeGraph';
+import { analyticsRouter } from './routes/analytics';
 import { errorHandler } from './middleware/errorHandler';
 import { asyncHandler } from './middleware/errorHandler';
 import { requestIdMiddleware } from './utils/requestId';
@@ -172,6 +173,7 @@ apiRouter.use('/dev', devRouter);
 apiRouter.use('/timeline-v2', timelineV2Router);
 apiRouter.use('/memory-engine', memoryEngineRouter);
 apiRouter.use('/graph', knowledgeGraphRouter);
+apiRouter.use('/analytics', analyticsRouter);
 
 app.use('/api', apiRouter);
 

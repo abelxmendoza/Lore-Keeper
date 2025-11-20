@@ -10,6 +10,14 @@ import { supabaseAdmin } from '../services/supabaseClient';
 import { logger } from '../logger';
 import { config } from '../config';
 import { getAdminMetrics } from '../lib/admin/getAdminMetrics';
+import {
+  getFinanceMetrics,
+  getMonthlyFinancials,
+  getSubscriptions,
+  getPaymentEvents,
+  calculateLTV,
+} from '../lib/admin/financeService';
+import { cancelSubscription } from '../services/stripeService';
 
 const router = Router();
 
@@ -88,22 +96,60 @@ router.get('/users', async (req: AuthenticatedRequest, res) => {
 
 /**
  * GET /admin/logs
- * Get error logs
+ * Get system logs with filtering support
  */
 router.get('/logs', async (req: AuthenticatedRequest, res) => {
   try {
     logAdminAction(req.user!.id, 'view_logs');
 
-    const limit = Number(req.query.limit) || 100;
-    const level = req.query.level as string;
+    const limit = Math.min(Number(req.query.limit) || 100, 1000); // Max 1000
+    const level = req.query.level as string | undefined;
+    const source = req.query.source as string | undefined;
+    const timeRange = req.query.timeRange as string | undefined;
+    const search = req.query.search as string | undefined;
+
+    // Calculate time range filter
+    let startDate: Date | null = null;
+    if (timeRange && timeRange !== 'all') {
+      const now = new Date();
+      switch (timeRange) {
+        case '1h':
+          startDate = new Date(now.getTime() - 60 * 60 * 1000);
+          break;
+        case '24h':
+          startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          break;
+        case '7d':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case '30d':
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+      }
+    }
 
     // In a real implementation, you'd query from a logs table or service
-    // For now, return a placeholder structure
+    // Example query structure:
+    // SELECT * FROM system_logs
+    // WHERE (level = $1 OR $1 IS NULL)
+    //   AND (source = $2 OR $2 IS NULL)
+    //   AND (created_at >= $3 OR $3 IS NULL)
+    //   AND (message ILIKE $4 OR $4 IS NULL)
+    // ORDER BY created_at DESC
+    // LIMIT $5
+    
+    // For now, return empty array - frontend will use mock data
     res.json({
       logs: [],
       message: 'Logs endpoint - implement with your logging service',
       limit,
-      level
+      filters: {
+        level,
+        source,
+        timeRange,
+        search,
+        startDate: startDate?.toISOString(),
+      }
     });
   } catch (error) {
     logger.error({ error }, 'Error fetching logs');
@@ -203,6 +249,151 @@ router.post('/rebuild-clusters', async (req: AuthenticatedRequest, res) => {
   } catch (error) {
     logger.error({ error }, 'Error rebuilding clusters');
     res.status(500).json({ error: 'Failed to rebuild clusters' });
+  }
+});
+
+// ============================================
+// Finance Routes
+// ============================================
+
+/**
+ * GET /admin/finance/metrics
+ * Get finance KPIs (MRR, active subs, churn rate, refunds)
+ */
+router.get('/finance/metrics', async (req: AuthenticatedRequest, res) => {
+  try {
+    logAdminAction(req.user!.id, 'view_finance_metrics');
+    const metrics = await getFinanceMetrics();
+    res.json(metrics);
+  } catch (error) {
+    logger.error({ error }, 'Error fetching finance metrics');
+    res.status(500).json({ error: 'Failed to fetch finance metrics' });
+  }
+});
+
+/**
+ * GET /admin/finance/revenue
+ * Get revenue graph data (monthly)
+ */
+router.get('/finance/revenue', async (req: AuthenticatedRequest, res) => {
+  try {
+    logAdminAction(req.user!.id, 'view_revenue_graph');
+
+    const days = Number(req.query.days) || 90;
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const monthlyData = await getMonthlyFinancials(startDate, endDate);
+    res.json({ data: monthlyData });
+  } catch (error) {
+    logger.error({ error }, 'Error fetching revenue data');
+    res.status(500).json({ error: 'Failed to fetch revenue data' });
+  }
+});
+
+/**
+ * GET /admin/finance/subscriptions
+ * Get subscription list with LTV
+ */
+router.get('/finance/subscriptions', async (req: AuthenticatedRequest, res) => {
+  try {
+    logAdminAction(req.user!.id, 'view_subscriptions');
+
+    const status = req.query.status as string | undefined;
+    const search = req.query.search as string | undefined;
+
+    const subscriptions = await getSubscriptions({ status, search });
+    res.json({ subscriptions });
+  } catch (error) {
+    logger.error({ error }, 'Error fetching subscriptions');
+    res.status(500).json({ error: 'Failed to fetch subscriptions' });
+  }
+});
+
+/**
+ * GET /admin/finance/payment-events
+ * Get payment events feed
+ */
+router.get('/finance/payment-events', async (req: AuthenticatedRequest, res) => {
+  try {
+    logAdminAction(req.user!.id, 'view_payment_events');
+
+    const eventType = req.query.eventType as string | undefined;
+    const status = req.query.status as string | undefined;
+    const limit = Number(req.query.limit) || 100;
+
+    const events = await getPaymentEvents({ eventType, status, limit });
+    res.json({ events });
+  } catch (error) {
+    logger.error({ error }, 'Error fetching payment events');
+    res.status(500).json({ error: 'Failed to fetch payment events' });
+  }
+});
+
+/**
+ * POST /admin/finance/subscriptions/:id/cancel
+ * Cancel a subscription
+ */
+router.post('/finance/subscriptions/:id/cancel', async (req: AuthenticatedRequest, res) => {
+  try {
+    const subscriptionId = req.params.id;
+    logAdminAction(req.user!.id, 'cancel_subscription', { subscriptionId });
+
+    // Get subscription to find user_id and stripe_subscription_id
+    const { data: subscription, error: subError } = await supabaseAdmin
+      .from('subscriptions')
+      .select('user_id, stripe_subscription_id')
+      .eq('id', subscriptionId)
+      .single();
+
+    if (subError || !subscription) {
+      return res.status(404).json({ error: 'Subscription not found' });
+    }
+
+    if (!subscription.stripe_subscription_id) {
+      return res.status(400).json({ error: 'Subscription has no Stripe ID' });
+    }
+
+    await cancelSubscription(subscription.stripe_subscription_id, subscription.user_id);
+
+    res.json({ 
+      message: 'Subscription canceled',
+      subscriptionId 
+    });
+  } catch (error) {
+    logger.error({ error }, 'Error canceling subscription');
+    res.status(500).json({ error: 'Failed to cancel subscription' });
+  }
+});
+
+/**
+ * POST /admin/finance/subscriptions/:id/reset-billing
+ * Reset billing retry (clear past_due status)
+ */
+router.post('/finance/subscriptions/:id/reset-billing', async (req: AuthenticatedRequest, res) => {
+  try {
+    const subscriptionId = req.params.id;
+    logAdminAction(req.user!.id, 'reset_billing', { subscriptionId });
+
+    const { error } = await supabaseAdmin
+      .from('subscriptions')
+      .update({ status: 'active' })
+      .eq('id', subscriptionId)
+      .eq('status', 'past_due');
+
+    if (error) {
+      logger.error({ error }, 'Error resetting billing');
+      return res.status(500).json({ error: 'Failed to reset billing' });
+    }
+
+    res.json({ 
+      message: 'Billing retry reset',
+      subscriptionId 
+    });
+  } catch (error) {
+    logger.error({ error }, 'Error resetting billing');
+    res.status(500).json({ error: 'Failed to reset billing' });
   }
 });
 

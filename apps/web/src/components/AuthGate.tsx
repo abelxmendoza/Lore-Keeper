@@ -81,6 +81,8 @@ const AuthScreen = ({ onEmailLogin }: { onEmailLogin: (email: string) => Promise
 export const AuthGate = ({ children }: { children: ReactNode }) => {
   // TEMPORARY: Disable auth for development
   const DEV_DISABLE_AUTH = true;
+  // TEMPORARY: Disable terms agreement in dev mode
+  const DEV_DISABLE_TERMS = true;
   
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -102,6 +104,11 @@ export const AuthGate = ({ children }: { children: ReactNode }) => {
   
   // Bypass auth check in dev mode
   if (DEV_DISABLE_AUTH) {
+    // Skip terms agreement in dev mode if disabled
+    if (DEV_DISABLE_TERMS) {
+      return <>{children}</>;
+    }
+    
     // Show terms agreement if user hasn't accepted
     // Show it if:
     // 1. We have a status and it's not accepted, OR
@@ -239,7 +246,8 @@ export const AuthGate = ({ children }: { children: ReactNode }) => {
   // 1. User is authenticated, AND
   // 2. We're done loading, AND
   // 3. We don't have a status OR the status shows not accepted
-  if (session && !termsLoading) {
+  // Skip in dev mode if disabled
+  if (session && !termsLoading && !DEV_DISABLE_TERMS) {
     if (!termsStatus || !termsStatus.accepted) {
       return <TermsOfServiceAgreement onAccept={() => {
         setTermsAccepted(true);

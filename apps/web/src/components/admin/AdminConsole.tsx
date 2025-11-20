@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../lib/supabase';
 import { fetchJson } from '../../lib/api';
-import { AdminSidebar } from './AdminSidebar';
+import { AdminSidebar, type AdminSection } from './AdminSidebar';
 import { AdminCard } from './AdminCard';
 import { AdminTable } from './AdminTable';
 import { AdminHeader } from './AdminHeader';
+import { FinanceDashboard } from './FinanceDashboard';
+import { LogsViewer } from './LogsViewer';
 import { canAccessAdmin } from '../../middleware/roleGuard';
 import { Users, FileText, Zap, Database, AlertTriangle } from 'lucide-react';
-
-type AdminSection = 'dashboard' | 'users' | 'logs' | 'ai-events' | 'tools' | 'feature-flags';
 
 interface AdminMetrics {
   totalUsers: number;
@@ -26,11 +26,6 @@ interface User {
   role?: string;
 }
 
-interface Log {
-  timestamp: string;
-  level: string;
-  message: string;
-}
 
 interface AIEvent {
   timestamp: string;
@@ -44,7 +39,6 @@ export const AdminConsole = () => {
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [users, setUsers] = useState<User[]>([]);
-  const [logs, setLogs] = useState<Log[]>([]);
   const [aiEvents, setAiEvents] = useState<AIEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,8 +47,10 @@ export const AdminConsole = () => {
   const isAdmin = canAccessAdmin(user || null);
 
   useEffect(() => {
-    // Redirect if not admin
-    if (!isAdmin) {
+    // In development mode, allow access for testing
+    // In production, redirect if not admin
+    const apiEnv = import.meta.env.VITE_API_ENV || import.meta.env.MODE || 'dev';
+    if (!isAdmin && apiEnv !== 'dev' && apiEnv !== 'development') {
       window.location.href = '/';
       return;
     }
@@ -75,10 +71,6 @@ export const AdminConsole = () => {
       // Fetch users
       const usersData = await fetchJson<{ users: User[] }>('/api/admin/users');
       setUsers(usersData.users);
-
-      // Fetch logs
-      const logsData = await fetchJson<{ logs: Log[] }>('/api/admin/logs');
-      setLogs(logsData.logs);
 
       // Fetch AI events
       const eventsData = await fetchJson<{ events: AIEvent[] }>('/api/admin/ai-events');
@@ -114,6 +106,7 @@ export const AdminConsole = () => {
       case 'ai-events': return 'AI Generation Events';
       case 'tools': return 'Admin Tools';
       case 'feature-flags': return 'Feature Flags';
+      case 'finance': return 'Finance Dashboard';
       default: return 'Admin Console';
     }
   };
@@ -124,7 +117,8 @@ export const AdminConsole = () => {
       <main className="flex-1 p-6 text-white">
         <AdminHeader 
           title={getSectionTitle()}
-          subtitle={activeSection === 'dashboard' ? 'System overview and metrics' : undefined}
+          subtitle={activeSection === 'dashboard' ? 'System overview and metrics' : activeSection === 'finance' ? 'Revenue, subscriptions, and payment analytics' : undefined}
+          badge={activeSection === 'finance' ? 'PROD' : undefined}
         />
         
         {error && (
@@ -211,13 +205,7 @@ export const AdminConsole = () => {
             )}
 
             {activeSection === 'logs' && (
-              <div className="rounded-lg border border-border/60 bg-black/40 p-4">
-                <h2 className="text-xl font-semibold mb-4">Logs</h2>
-                <AdminTable
-                  columns={['timestamp', 'level', 'message']}
-                  data={logs}
-                />
-              </div>
+              <LogsViewer />
             )}
 
             {activeSection === 'ai-events' && (
@@ -266,6 +254,10 @@ export const AdminConsole = () => {
                 <h2 className="text-xl font-semibold mb-4">Feature Flags</h2>
                 <p className="text-white/60">Feature flag management coming soon...</p>
               </div>
+            )}
+
+            {activeSection === 'finance' && (
+              <FinanceDashboard />
             )}
           </>
         )}

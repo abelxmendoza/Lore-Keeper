@@ -850,11 +850,28 @@ Omega Canon Keeper ensures narrative consistency:
 
 ## Documentation
 
+### Getting Started
 - **[Quick Start Guide](QUICK_START.md)** - Get up and running fast
 - **[Demo Guide](DEMO_GUIDE.md)** - Explore all features
+
+### Technical Documentation
 - **[Backend API Mapping](BACKEND_FRONTEND_MAPPING.md)** - Complete API reference
 - **[Codex Blueprint](CODEX_BLUEPRINT.md)** - System architecture details
+- **[Database Blueprint](DATABASE_BLUEPRINT.md)** - Database schema details
+
+### Implementation & Status
+- **[Implementation Status](docs/IMPLEMENTATION_STATUS.md)** - Feature implementation tracking
+- **[Memory Engine](docs/MEMORY_ENGINE.md)** - Memory extraction system
+- **[Analytics System](docs/ANALYTICS_SYSTEM.md)** - Analytics modules documentation
+- **[Security Testing](docs/SECURITY_TESTING.md)** - Security test suite
+- **[Testing](docs/TESTING.md)** - Testing documentation
+- **[CI/CD](docs/CI_CD.md)** - CI/CD pipeline setup
+- **[Code Cleanup](docs/CODE_CLEANUP.md)** - Code cleanup documentation
+
+### Guides & Plans
 - **[Improvement Plan](IMPROVEMENT_PLAN.md)** - Roadmap and ideas
+- **[Privacy Guide](PRIVACY_GUIDE.md)** - Privacy and data protection
+- **[Subscription Guide](SUBSCRIPTION_GUIDE.md)** - Subscription management
 
 ---
 

@@ -22,8 +22,15 @@ export const isAdmin = (user: any): boolean => {
 
 /**
  * Check if user can access admin console
+ * In development mode, allow access for testing
  */
 export const canAccessAdmin = (user: any): boolean => {
+  // Allow access in development mode for testing
+  if (apiEnv === 'dev' || apiEnv === 'development') {
+    return true;
+  }
+  
+  // In production, require admin role
   return isAdmin(user);
 };
 

@@ -9,11 +9,12 @@ import {
   Zap, 
   Settings, 
   Database,
-  Flag
+  Flag,
+  DollarSign
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-type AdminSection = 'dashboard' | 'users' | 'logs' | 'ai-events' | 'tools' | 'feature-flags';
+export type AdminSection = 'dashboard' | 'users' | 'logs' | 'ai-events' | 'tools' | 'feature-flags' | 'finance';
 
 interface AdminSidebarProps {
   activeSection: AdminSection;
@@ -31,6 +32,7 @@ export const AdminSidebar = ({ activeSection, onSectionChange }: AdminSidebarPro
     { id: 'ai-events' as AdminSection, label: 'AI Gen Events', icon: Zap },
     { id: 'tools' as AdminSection, label: 'Tools', icon: Settings },
     { id: 'feature-flags' as AdminSection, label: 'Feature Flags', icon: Flag },
+    { id: 'finance' as AdminSection, label: 'Finance', icon: DollarSign },
   ];
 
   return (

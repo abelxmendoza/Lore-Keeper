@@ -1,6 +1,8 @@
 import Stripe from 'stripe';
 import { config } from '../config';
 import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from './supabaseClient';
+import { logger } from '../logger';
 
 const supabase = createClient(config.supabaseUrl, config.supabaseServiceRoleKey, {
   auth: { persistSession: false }
@@ -196,6 +198,59 @@ export async function createBillingPortalSession(
 }
 
 /**
+ * Log payment event to payment_events table
+ */
+async function logPaymentEvent(
+  userId: string | null,
+  stripeCustomerId: string | null,
+  eventType: string,
+  amount: number,
+  currency: string,
+  status: string,
+  stripeInvoiceId?: string | null,
+  stripePaymentIntentId?: string | null,
+  metadata?: Record<string, any>
+): Promise<void> {
+  if (!userId) {
+    logger.warn({ eventType, stripeCustomerId }, 'Cannot log payment event: no user_id');
+    return;
+  }
+
+  try {
+    const { error } = await supabaseAdmin.from('payment_events').insert({
+      user_id: userId,
+      stripe_customer_id: stripeCustomerId,
+      stripe_invoice_id: stripeInvoiceId || null,
+      stripe_payment_intent_id: stripePaymentIntentId || null,
+      event_type: eventType,
+      amount: amount / 100, // Convert from cents to dollars for storage
+      currency: currency || 'usd',
+      status: status,
+      metadata: metadata || {},
+    });
+
+    if (error) {
+      logger.error({ error, eventType, userId }, 'Failed to log payment event');
+    }
+  } catch (error) {
+    logger.error({ error, eventType, userId }, 'Error logging payment event');
+  }
+}
+
+/**
+ * Get user_id from Stripe customer ID
+ */
+async function getUserIdFromCustomer(customerId: string): Promise<string | null> {
+  const { data } = await supabaseAdmin
+    .from('subscriptions')
+    .select('user_id')
+    .eq('stripe_customer_id', customerId)
+    .single();
+
+  return data?.user_id || null;
+}
+
+/**
  * Handle Stripe webhook events
  */
 export async function handleWebhook(event: Stripe.Event): Promise<void> {
@@ -204,7 +259,32 @@ export async function handleWebhook(event: Stripe.Event): Promise<void> {
   }
 
   switch (event.type) {
-    case 'customer.subscription.created':
+    case 'customer.subscription.created': {
+      const subscription = event.data.object as Stripe.Subscription;
+      await syncSubscriptionFromStripe(subscription);
+      
+      // Log subscription creation event
+      const customerId = typeof subscription.customer === 'string' 
+        ? subscription.customer 
+        : subscription.customer.id;
+      const userId = await getUserIdFromCustomer(customerId);
+      if (userId) {
+        const amount = subscription.items.data[0]?.price?.unit_amount || 0;
+        await logPaymentEvent(
+          userId,
+          customerId,
+          'subscription_created',
+          amount,
+          subscription.currency || 'usd',
+          subscription.status,
+          undefined,
+          undefined,
+          { subscription_id: subscription.id }
+        );
+      }
+      break;
+    }
+
     case 'customer.subscription.updated': {
       const subscription = event.data.object as Stripe.Subscription;
       await syncSubscriptionFromStripe(subscription);
@@ -214,6 +294,25 @@ export async function handleWebhook(event: Stripe.Event): Promise<void> {
     case 'customer.subscription.deleted': {
       const subscription = event.data.object as Stripe.Subscription;
       await handleSubscriptionDeleted(subscription);
+      
+      // Log subscription deletion event
+      const customerId = typeof subscription.customer === 'string' 
+        ? subscription.customer 
+        : subscription.customer.id;
+      const userId = await getUserIdFromCustomer(customerId);
+      if (userId) {
+        await logPaymentEvent(
+          userId,
+          customerId,
+          'subscription_deleted',
+          0,
+          subscription.currency || 'usd',
+          'canceled',
+          undefined,
+          undefined,
+          { subscription_id: subscription.id }
+        );
+      }
       break;
     }
 
@@ -224,6 +323,25 @@ export async function handleWebhook(event: Stripe.Event): Promise<void> {
         if (sub) {
           await syncSubscriptionFromStripe(sub);
         }
+      }
+      
+      // Log successful payment
+      const customerId = typeof invoice.customer === 'string' 
+        ? invoice.customer 
+        : invoice.customer?.id;
+      const userId = customerId ? await getUserIdFromCustomer(customerId) : null;
+      if (userId) {
+        await logPaymentEvent(
+          userId,
+          customerId || null,
+          'payment_succeeded',
+          invoice.amount_paid || 0,
+          invoice.currency || 'usd',
+          'succeeded',
+          invoice.id,
+          typeof invoice.payment_intent === 'string' ? invoice.payment_intent : invoice.payment_intent?.id,
+          { invoice_id: invoice.id, subscription_id: invoice.subscription }
+        );
       }
       break;
     }
@@ -243,6 +361,47 @@ export async function handleWebhook(event: Stripe.Event): Promise<void> {
             .update({ status: 'past_due' })
             .eq('user_id', data.user_id);
         }
+      }
+      
+      // Log failed payment
+      const customerId = typeof invoice.customer === 'string' 
+        ? invoice.customer 
+        : invoice.customer?.id;
+      const userId = customerId ? await getUserIdFromCustomer(customerId) : null;
+      if (userId) {
+        await logPaymentEvent(
+          userId,
+          customerId || null,
+          'payment_failed',
+          invoice.amount_due || 0,
+          invoice.currency || 'usd',
+          'failed',
+          invoice.id,
+          typeof invoice.payment_intent === 'string' ? invoice.payment_intent : invoice.payment_intent?.id,
+          { invoice_id: invoice.id, subscription_id: invoice.subscription, attempt_count: invoice.attempt_count }
+        );
+      }
+      break;
+    }
+
+    case 'charge.refunded': {
+      const charge = event.data.object as Stripe.Charge;
+      const customerId = typeof charge.customer === 'string' 
+        ? charge.customer 
+        : charge.customer?.id;
+      const userId = customerId ? await getUserIdFromCustomer(customerId) : null;
+      if (userId) {
+        await logPaymentEvent(
+          userId,
+          customerId || null,
+          'refund',
+          charge.amount_refunded || 0,
+          charge.currency || 'usd',
+          'refunded',
+          charge.invoice as string | undefined,
+          charge.payment_intent as string | undefined,
+          { charge_id: charge.id, refund_amount: charge.amount_refunded }
+        );
       }
       break;
     }

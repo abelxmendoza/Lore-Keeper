@@ -24,6 +24,7 @@
     "openai": "^4.52.2",
     "pino": "^9.1.0",
     "pino-pretty": "^11.2.2",
+    "stripe": "^20.0.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "uuid": "^9.0.1",
