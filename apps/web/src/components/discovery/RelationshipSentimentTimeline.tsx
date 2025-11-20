@@ -46,8 +46,10 @@ export const RelationshipSentimentTimeline = ({ data }: RelationshipSentimentTim
   // Transform data for Recharts: combine all timelines into a single dataset
   const dateSet = new Set<string>();
   for (const item of data) {
-    for (const point of item.timeline) {
-      dateSet.add(point.date);
+    if (item.timeline && Array.isArray(item.timeline)) {
+      for (const point of item.timeline) {
+        dateSet.add(point.date);
+      }
     }
   }
   const sortedDates = Array.from(dateSet).sort();
@@ -56,9 +58,11 @@ export const RelationshipSentimentTimeline = ({ data }: RelationshipSentimentTim
   const chartData = sortedDates.map(date => {
     const entry: Record<string, any> = { date };
     for (const item of data) {
-      const point = item.timeline.find(p => p.date === date);
-      if (point) {
-        entry[item.character] = point.sentiment;
+      if (item.timeline && Array.isArray(item.timeline)) {
+        const point = item.timeline.find(p => p.date === date);
+        if (point) {
+          entry[item.character] = point.sentiment;
+        }
       }
     }
     return entry;

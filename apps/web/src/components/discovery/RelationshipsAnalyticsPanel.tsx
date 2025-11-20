@@ -43,12 +43,12 @@ export const RelationshipsAnalyticsPanel = () => {
   }
 
   const metadata = data.metadata || {};
-  const sentimentTimeline = metadata.sentimentTimeline || [];
-  const archetypes = metadata.archetypes || [];
-  const attachmentGravity = metadata.attachmentGravity || [];
-  const forecast = metadata.forecast || [];
-  const arcAppearances = metadata.arcAppearances || [];
-  const heatmap = metadata.heatmap || [];
+  const sentimentTimeline = Array.isArray(metadata.sentimentTimeline) ? metadata.sentimentTimeline : [];
+  const archetypes = Array.isArray(metadata.archetypes) ? metadata.archetypes : [];
+  const attachmentGravity = Array.isArray(metadata.attachmentGravity) ? metadata.attachmentGravity : [];
+  const forecast = Array.isArray(metadata.forecast) ? metadata.forecast : [];
+  const arcAppearances = Array.isArray(metadata.arcAppearances) ? metadata.arcAppearances : [];
+  const heatmap = Array.isArray(metadata.heatmap) ? metadata.heatmap : [];
 
   return (
     <div className="space-y-6">
@@ -103,12 +103,12 @@ export const RelationshipsAnalyticsPanel = () => {
       )}
 
       {/* Relationship Network Graph */}
-      {data.graph && data.graph.nodes && data.graph.nodes.length > 0 && (
+      {data.graph && data.graph.nodes && Array.isArray(data.graph.nodes) && data.graph.nodes.length > 0 && (
         <div>
           <h3 className="text-lg font-semibold text-white mb-4">Relationship Network</h3>
           <GraphVis
             nodes={data.graph.nodes}
-            edges={data.graph.edges}
+            edges={Array.isArray(data.graph.edges) ? data.graph.edges : []}
             title="Relationship Network"
             height={500}
           />
@@ -126,20 +126,20 @@ export const RelationshipsAnalyticsPanel = () => {
       )}
 
       {/* Charts Section */}
-      {data.charts && data.charts.length > 0 && (
+      {data.charts && Array.isArray(data.charts) && data.charts.length > 0 && (
         <div>
           <h3 className="text-lg font-semibold text-white mb-4">Visualizations</h3>
           <div className="space-y-6">
             {data.charts.map((chart, index) => (
               <ChartCard
                 key={chart.id || index}
-                title={chart.title}
-                chartType={chart.type}
-                data={chart.data}
+                title={chart.title || 'Chart'}
+                chartType={chart.type || 'line'}
+                data={Array.isArray(chart.data) ? chart.data : []}
                 description={chart.description}
                 xAxis={chart.xAxis}
                 yAxis={chart.yAxis}
-                series={chart.series}
+                series={Array.isArray(chart.series) ? chart.series : []}
               />
             ))}
           </div>
@@ -167,19 +167,19 @@ export const RelationshipsAnalyticsPanel = () => {
       )}
 
       {/* Insights Section */}
-      {data.insights && data.insights.length > 0 && (
+      {data.insights && Array.isArray(data.insights) && data.insights.length > 0 && (
         <div>
           <h3 className="text-lg font-semibold text-white mb-4">Insights</h3>
           <div className="space-y-3">
             {data.insights.map((insight, index) => {
-              const insightText = typeof insight === 'string' ? insight : insight.text;
-              const insightTitle = typeof insight === 'object' ? insight.title : undefined;
-              const insightCategory = typeof insight === 'object' ? insight.category : undefined;
-              const insightScore = typeof insight === 'object' ? insight.score : undefined;
+              const insightText = typeof insight === 'string' ? insight : (insight?.text || '');
+              const insightTitle = typeof insight === 'object' ? insight?.title : undefined;
+              const insightCategory = typeof insight === 'object' ? insight?.category : undefined;
+              const insightScore = typeof insight === 'object' ? insight?.score : undefined;
 
               return (
                 <InsightCard
-                  key={insight.id || index}
+                  key={insight?.id || index}
                   title={insightTitle}
                   body={insightText}
                   category={insightCategory}
