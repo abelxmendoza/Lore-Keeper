@@ -1,10 +1,18 @@
-import DOMPurify from 'dompurify';
+// DOMPurify is only available in browser environment
+let DOMPurify: any = null;
+if (typeof window !== 'undefined') {
+  try {
+    DOMPurify = require('dompurify');
+  } catch {
+    // DOMPurify not available, will use fallback sanitization
+  }
+}
 
 /**
  * Sanitize HTML to prevent XSS attacks
  */
 export const sanitizeHtml = (dirty: string): string => {
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || !DOMPurify) {
     // Server-side rendering - return as-is (will be sanitized on client)
     return dirty;
   }

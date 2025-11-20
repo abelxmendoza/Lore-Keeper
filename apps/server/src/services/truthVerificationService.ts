@@ -1,6 +1,10 @@
 import { logger } from '../logger';
 import { memoryService } from './memoryService';
 import { factExtractionService, type ExtractedFact } from './factExtractionService';
+import { ruleBasedFactExtractionService } from './ruleBasedFactExtraction';
+import { factCacheService } from './factCacheService';
+import { BooleanContradiction } from '../math/booleanContradiction';
+import { FactSetTheory } from '../math/factSetTheory';
 import { supabaseAdmin } from './supabaseClient';
 import type { MemoryEntry } from '../types';
 
@@ -41,8 +45,38 @@ class TruthVerificationService {
    */
   async verifyEntry(userId: string, entryId: string, entry: MemoryEntry): Promise<VerificationResult> {
     try {
-      // Extract facts from the entry
-      const extractionResult = await factExtractionService.extractFacts(entry.content);
+      // Try to get cached facts first (FREE - no API call)
+      let extractionResult = await factCacheService.getCachedFactsForEntry(userId, entryId);
+      
+      // If not cached, use rule-based extraction (FREE - no API call)
+      if (!extractionResult) {
+        extractionResult = await ruleBasedFactExtractionService.extractFacts(entry.content);
+        
+        // Cache the extracted facts for future use
+        await factCacheService.cacheFacts(entry.content, extractionResult);
+        
+        // Also store facts in fact_claims table for this entry
+        if (extractionResult.facts.length > 0) {
+          const factClaims = extractionResult.facts.map(fact => ({
+            user_id: userId,
+            entry_id: entryId,
+            claim_type: fact.claim_type,
+            subject: fact.subject,
+            attribute: fact.attribute,
+            value: fact.value,
+            confidence: fact.confidence,
+            metadata: { context: fact.context }
+          }));
+
+          await supabaseAdmin
+            .from('fact_claims')
+            .upsert(factClaims, {
+              onConflict: 'user_id,entry_id,subject,attribute,value'
+            })
+            .catch(err => logger.debug({ error: err }, 'Failed to store fact claims'));
+        }
+      }
+      
       const extractedFacts = extractionResult.facts;
 
       if (extractedFacts.length === 0) {
@@ -160,43 +194,144 @@ class TruthVerificationService {
     const evidence: EvidenceEntry[] = [];
     const contradictions: EvidenceEntry[] = [];
 
-    // Check against related entries
+    // Get cached facts for all related entries (FREE - database queries only)
+    // Track which facts belong to which entries
+    const entryFactsMap = new Map<string, ExtractedFact[]>();
+    
     for (const entry of relatedEntries) {
       if (entry.id === currentEntryId) continue;
 
-      // Extract facts from related entry
-      const relatedFacts = await factExtractionService.extractFacts(entry.content);
+      // Try cached facts first (FREE)
+      let relatedFactsResult = await factCacheService.getCachedFactsForEntry(userId, entry.id);
       
-      // Check for matching facts (supporting evidence)
-      const matchingFacts = relatedFacts.facts.filter(
-        f => f.subject.toLowerCase() === fact.subject.toLowerCase() &&
-             f.attribute.toLowerCase() === fact.attribute.toLowerCase() &&
-             this.valuesMatch(f.value, fact.value)
-      );
-
-      if (matchingFacts.length > 0) {
-        evidence.push({
-          entry_id: entry.id,
-          entry_date: entry.date,
-          content_snippet: entry.content.substring(0, 200),
-          similarity_score: matchingFacts[0].confidence
-        });
+      // If not cached, try content hash cache (FREE)
+      if (!relatedFactsResult) {
+        relatedFactsResult = await factCacheService.getCachedFacts(entry.content);
       }
+      
+      // If still not cached, use rule-based extraction (FREE - no API call)
+      if (!relatedFactsResult) {
+        relatedFactsResult = await ruleBasedFactExtractionService.extractFacts(entry.content);
+        
+        // Cache for future use
+        await factCacheService.cacheFacts(entry.content, relatedFactsResult);
+        
+        // Store in fact_claims table
+        if (relatedFactsResult.facts.length > 0) {
+          const factClaims = relatedFactsResult.facts.map(f => ({
+            user_id: userId,
+            entry_id: entry.id,
+            claim_type: f.claim_type,
+            subject: f.subject,
+            attribute: f.attribute,
+            value: f.value,
+            confidence: f.confidence,
+            metadata: { context: f.context }
+          }));
 
-      // Check for contradicting facts
-      const contradictingFacts = relatedFacts.facts.filter(
-        f => f.subject.toLowerCase() === fact.subject.toLowerCase() &&
-             f.attribute.toLowerCase() === fact.attribute.toLowerCase() &&
-             !this.valuesMatch(f.value, fact.value)
-      );
+          await supabaseAdmin
+            .from('fact_claims')
+            .upsert(factClaims, {
+              onConflict: 'user_id,entry_id,subject,attribute,value'
+            })
+            .catch(err => logger.debug({ error: err }, 'Failed to store fact claims'));
+        }
+      }
+      
+      // Store facts for this entry
+      entryFactsMap.set(entry.id, relatedFactsResult.facts);
+    }
 
-      if (contradictingFacts.length > 0) {
-        contradictions.push({
-          entry_id: entry.id,
-          entry_date: entry.date,
-          content_snippet: entry.content.substring(0, 200),
-          similarity_score: contradictingFacts[0].confidence
-        });
+    // Collect all facts for efficient operations
+    const allRelatedFacts: ExtractedFact[] = [];
+    entryFactsMap.forEach(facts => allRelatedFacts.push(...facts));
+
+    // Find supporting evidence using boolean logic (FAST - O(n))
+    for (const [entryId, entryFacts] of entryFactsMap) {
+      const supportingFact = BooleanContradiction.isSupportedBy(fact, entryFacts);
+      if (supportingFact) {
+        const entry = relatedEntries.find(e => e.id === entryId);
+        if (entry) {
+          evidence.push({
+            entry_id: entry.id,
+            entry_date: entry.date,
+            content_snippet: entry.content.substring(0, 200),
+            similarity_score: supportingFact.confidence
+          });
+        }
+      }
+    }
+
+    // Find contradictions using boolean logic (FAST - O(n))
+    for (const [entryId, entryFacts] of entryFactsMap) {
+      const contradictingFact = BooleanContradiction.contradictsAny(fact, entryFacts);
+      if (contradictingFact) {
+        const entry = relatedEntries.find(e => e.id === entryId);
+        if (entry) {
+          contradictions.push({
+            entry_id: entry.id,
+            entry_date: entry.date,
+            content_snippet: entry.content.substring(0, 200),
+            similarity_score: contradictingFact.confidence
+          });
+        }
+      }
+    }
+
+    // Also check database for existing facts (FREE - database query)
+    const { data: existingFacts } = await supabaseAdmin
+      .from('fact_claims')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('subject', fact.subject)
+      .eq('attribute', fact.attribute)
+      .neq('entry_id', currentEntryId);
+
+    if (existingFacts && existingFacts.length > 0) {
+      for (const existingFact of existingFacts) {
+        const existingFactObj: ExtractedFact = {
+          claim_type: existingFact.claim_type as any,
+          subject: existingFact.subject,
+          attribute: existingFact.attribute,
+          value: existingFact.value,
+          confidence: existingFact.confidence
+        };
+
+        // Check for support
+        if (BooleanContradiction.supports(existingFactObj, fact)) {
+          const { data: entry } = await supabaseAdmin
+            .from('journal_entries')
+            .select('id, date, content')
+            .eq('id', existingFact.entry_id)
+            .single();
+
+          if (entry) {
+            evidence.push({
+              entry_id: entry.id,
+              entry_date: entry.date,
+              content_snippet: entry.content.substring(0, 200),
+              similarity_score: existingFact.confidence
+            });
+          }
+        }
+
+        // Check for contradiction
+        if (BooleanContradiction.contradicts(existingFactObj, fact)) {
+          const { data: entry } = await supabaseAdmin
+            .from('journal_entries')
+            .select('id, date, content')
+            .eq('id', existingFact.entry_id)
+            .single();
+
+          if (entry) {
+            contradictions.push({
+              entry_id: entry.id,
+              entry_date: entry.date,
+              content_snippet: entry.content.substring(0, 200),
+              similarity_score: existingFact.confidence
+            });
+          }
+        }
       }
     }
 

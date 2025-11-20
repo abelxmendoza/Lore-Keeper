@@ -1,82 +1,99 @@
 import { Router } from 'express';
 
 import { requireAuth, type AuthenticatedRequest } from '../middleware/auth';
-import { emitDelta } from '../realtime/orchestratorEmitter';
+import { logger } from '../logger';
+import { continuityService } from '../services/continuity/continuityService';
+import { continuityEngineJob } from '../jobs/continuityEngineJob';
 
 const router = Router();
 
-const canonicalFacts = [
-  { subject: 'Alex', attribute: 'birthday', value: '1990-01-01', confidence: 0.93, scope: 'identity', permanent: true },
-  { subject: 'Alex', attribute: 'hometown', value: 'Seattle', confidence: 0.98, scope: 'identity', permanent: true },
-  { subject: 'Alex', attribute: 'identity_version', value: 'v2', confidence: 0.82, scope: 'identity' }
-];
+/**
+ * GET /api/continuity/events
+ * Get continuity events for user
+ */
+router.get('/events', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { type, limit } = req.query;
 
-const driftSignals = [
-  { subject: 'Alex', attribute: 'identity_version', drift_score: 0.5, segments: ['Season 1', 'Season 2'], notes: 'Shifted from v1 to v2' },
-  { subject: 'Alex', attribute: 'relationships', drift_score: 0.3, segments: ['Spring', 'Summer'], notes: 'New partnerships formed' }
-];
+    const events = await continuityService.getContinuityEvents(
+      req.user!.id,
+      type as string | undefined,
+      limit ? parseInt(limit as string) : 50
+    );
 
-const conflicts = [
-  {
-    conflict_type: 'factual',
-    description: 'Birthday mismatch between biography sources',
-    severity: 'high',
-    subjects: ['Alex'],
-    attributes: ['birthday'],
-    evidence: ['bio-1', 'bio-3']
-  },
-  {
-    conflict_type: 'temporal',
-    description: 'Overlapping events detected in schedule',
-    severity: 'medium',
-    subjects: ['Alex'],
-    attributes: ['date'],
-    evidence: ['overlap-1', 'overlap-2']
+    res.json({ events });
+  } catch (error) {
+    logger.error({ error }, 'Failed to get continuity events');
+    res.status(500).json({
+      error: 'Failed to get continuity events',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
   }
-];
-
-const driftSummary = { character: 0.82, identity: 0.7, project: 0.86, location: 0.9 };
-
-const reportMarkdown = `# Canon Summary
-- **Alex::birthday** → 1990-01-01 (conf=0.93, scope=identity)
-- **Alex::hometown** → Seattle (conf=0.98, scope=identity)
-
-# Conflicts Report
-- [FACTUAL] Birthday mismatch between biography sources (severity: high)
-- [TEMPORAL] Overlapping events detected in schedule (severity: medium)
-
-# Drift Maps
-- Alex::identity_version drift=0.50 segments=[Season 1, Season 2] Shifted from v1 to v2
-
-# Stability Timeline
-- Stable vs unstable eras derived from drift signals above.
-
-# Character Consistency Map
-- Character consistency inferred from identity drift metrics.
-
-# Identity Continuity Overview
-- Identity stability synthesized from canonical facts and drift trends.
-`;
-
-const state = { registry: { facts: canonicalFacts }, driftSummary, driftSignals, score: 88, conflicts };
-
-router.get('/state', requireAuth, async (_req: AuthenticatedRequest, res) => {
-  res.json({ state });
 });
 
-router.get('/conflicts', requireAuth, async (_req: AuthenticatedRequest, res) => {
-  res.json({ conflicts });
+/**
+ * POST /api/continuity/run
+ * Manually trigger continuity analysis
+ */
+router.post('/run', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    // Run analysis in background
+    continuityService
+      .runContinuityAnalysis(req.user!.id)
+      .then(result => {
+        logger.info({ userId: req.user!.id, eventCount: result.events.length }, 'Continuity analysis completed');
+      })
+      .catch(error => {
+        logger.error({ error, userId: req.user!.id }, 'Continuity analysis failed');
+      });
+
+    res.json({
+      message: 'Continuity analysis started',
+      status: 'processing',
+    });
+  } catch (error) {
+    logger.error({ error }, 'Failed to start continuity analysis');
+    res.status(500).json({
+      error: 'Failed to start continuity analysis',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
 });
 
-router.post('/recompute', requireAuth, async (_req: AuthenticatedRequest, res) => {
-  // Placeholder recompute hook. In a full build, this would invoke the Python continuity engine.
-  const refreshedAt = new Date().toISOString();
-  void emitDelta('continuity.recompute', { state, refreshedAt }, _req.user!.id);
-  res.json({ state, refreshedAt });
+/**
+ * GET /api/continuity/goals
+ * Get goals (active and abandoned)
+ */
+router.get('/goals', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const goals = await continuityService.getGoals(req.user!.id);
+
+    res.json(goals);
+  } catch (error) {
+    logger.error({ error }, 'Failed to get goals');
+    res.status(500).json({
+      error: 'Failed to get goals',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
 });
 
-router.get('/report', requireAuth, async (_req: AuthenticatedRequest, res) => {
-  res.json({ report: reportMarkdown });
+/**
+ * GET /api/continuity/contradictions
+ * Get contradictions
+ */
+router.get('/contradictions', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const contradictions = await continuityService.getContradictions(req.user!.id);
+
+    res.json({ contradictions });
+  } catch (error) {
+    logger.error({ error }, 'Failed to get contradictions');
+    res.status(500).json({
+      error: 'Failed to get contradictions',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
 });
 
 export const continuityRouter = router;

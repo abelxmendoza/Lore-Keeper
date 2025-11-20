@@ -2,31 +2,61 @@ module.exports = {
   root: true,
   env: {
     browser: true,
-    es2020: true,
+    es2020: true
   },
   extends: [
     'eslint:recommended',
-    'plugin:react/recommended',
-    'plugin:react/jsx-runtime',
+    'plugin:@typescript-eslint/recommended',
     'plugin:react-hooks/recommended',
-    'plugin:jsx-a11y/recommended',
-    'prettier',
+    'plugin:import/recommended',
+    'plugin:import/typescript',
+    'prettier'
   ],
   ignorePatterns: ['dist', '.eslintrc.cjs'],
-  plugins: ['react-refresh', 'jsx-a11y'],
-  settings: {
-    react: {
-      version: 'detect',
-    },
-  },
+  parser: '@typescript-eslint/parser',
+  plugins: ['react-refresh', '@typescript-eslint', 'import'],
   rules: {
     'react-refresh/only-export-components': [
       'warn',
-      { allowConstantExport: true },
+      { allowConstantExport: true }
     ],
-    'jsx-a11y/click-events-have-key-events': 'warn',
-    'jsx-a11y/no-noninteractive-element-interactions': 'warn',
-    'jsx-a11y/anchor-is-valid': 'warn',
+    '@typescript-eslint/no-unused-vars': [
+      'warn',
+      {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_'
+      }
+    ],
+    '@typescript-eslint/no-explicit-any': 'warn',
+    'import/no-duplicates': 'error',
+    'import/order': [
+      'warn',
+      {
+        groups: [
+          'builtin',
+          'external',
+          'internal',
+          'parent',
+          'sibling',
+          'index'
+        ],
+        'newlines-between': 'always',
+        alphabetize: {
+          order: 'asc',
+          caseInsensitive: true
+        }
+      }
+    ],
+    'no-duplicate-imports': 'error'
   },
+  settings: {
+    react: {
+      version: 'detect'
+    },
+    'import/resolver': {
+      typescript: {
+        alwaysTryTypes: true
+      }
+    }
+  }
 };
-

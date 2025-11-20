@@ -6,6 +6,7 @@ import { assertConfig, config } from './config';
 import { logger } from './logger';
 import { calendarRouter } from './routes/calendar';
 import { registerSyncJob } from './jobs/syncJob';
+import { memoryExtractionWorker } from './jobs/memoryExtractionWorker';
 import { entriesRouter } from './routes/entries';
 import { photosRouter } from './routes/photos';
 import { summaryRouter } from './routes/summary';
@@ -15,7 +16,6 @@ import { chaptersRouter } from './routes/chapters';
 import { evolutionRouter } from './routes/evolution';
 import { correctionsRouter } from './routes/corrections';
 import { canonRouter } from './routes/canon';
-import { ladderRouter } from './routes/ladder';
 import { memoryGraphRouter } from './routes/memoryGraph';
 import { memoryLadderRouter } from './routes/memoryLadder';
 import { hqiRouter } from './routes/hqi';
@@ -52,6 +52,7 @@ import { memoirRouter } from './routes/memoir';
 import { biographyRouter } from './routes/biography';
 import { documentsRouter } from './routes/documents';
 import { devRouter } from './routes/dev';
+import { adminRouter } from './routes/admin';
 import healthRouter from './routes/health';
 import { timeRouter } from './routes/time';
 import { privacyRouter } from './routes/privacy';
@@ -59,6 +60,9 @@ import { subscriptionRouter } from './routes/subscription';
 import { userRouter } from './routes/user';
 import { essenceRouter } from './routes/essence';
 import { verificationRouter } from './routes/verification';
+import { timelineV2Router } from './routes/timelineV2';
+import { memoryEngineRouter } from './routes/memoryEngine';
+import { knowledgeGraphRouter } from './routes/knowledgeGraph';
 import { errorHandler } from './middleware/errorHandler';
 import { asyncHandler } from './middleware/errorHandler';
 import { requestIdMiddleware } from './utils/requestId';
@@ -129,7 +133,6 @@ apiRouter.use('/chapters', chaptersRouter);
 apiRouter.use('/evolution', evolutionRouter);
 apiRouter.use('/corrections', correctionsRouter);
 apiRouter.use('/canon', canonRouter);
-apiRouter.use('/ladder', ladderRouter);
 apiRouter.use('/memory-graph', memoryGraphRouter);
 apiRouter.use('/memory-ladder', memoryLadderRouter);
 apiRouter.use('/hqi', hqiRouter);
@@ -164,7 +167,11 @@ apiRouter.use('/privacy', privacyRouter);
 apiRouter.use('/user', userRouter);
 apiRouter.use('/essence', essenceRouter);
 apiRouter.use('/verification', verificationRouter);
+apiRouter.use('/admin', adminRouter);
 apiRouter.use('/dev', devRouter);
+apiRouter.use('/timeline-v2', timelineV2Router);
+apiRouter.use('/memory-engine', memoryEngineRouter);
+apiRouter.use('/graph', knowledgeGraphRouter);
 
 app.use('/api', apiRouter);
 
@@ -178,8 +185,12 @@ app.use(errorHandler);
 
 try {
   registerSyncJob();
+  memoryExtractionWorker.start();
+  insightGenerationJob.register();
+  graphUpdateJob.register();
+  continuityEngineJob.register();
 } catch (error) {
-  logger.warn({ error }, 'Failed to register sync job, continuing anyway');
+  logger.warn({ error }, 'Failed to register background jobs, continuing anyway');
 }
 
 const server = app.listen(config.port, () => {

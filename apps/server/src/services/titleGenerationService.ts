@@ -10,6 +10,7 @@ import { config } from '../config';
 import { memoryService } from './memoryService';
 import { timelineManager } from './timelineManager';
 import { supabaseAdmin } from './supabaseClient';
+import { ruleBasedTitleGenerationService } from './ruleBasedTitleGeneration';
 
 const openai = new OpenAI({ apiKey: config.openAiKey });
 
@@ -33,6 +34,15 @@ class TitleGenerationService {
     context?: { relatedEntries?: Array<{ content: string; date: string }> }
   ): Promise<string> {
     try {
+      // Use rule-based title generation first (FREE - no API call)
+      const ruleBasedTitle = ruleBasedTitleGenerationService.generateEntryTitle(content, date);
+      
+      // If rule-based title is good enough (not generic), use it
+      if (ruleBasedTitle && ruleBasedTitle !== 'Untitled Memory' && ruleBasedTitle.length > 10) {
+        return ruleBasedTitle;
+      }
+
+      // Fallback to API only if rule-based didn't produce good title
       const relatedContext = context?.relatedEntries
         ? `\n\nRelated entries:\n${context.relatedEntries.slice(0, 3).map(e => `[${e.date}] ${e.content.substring(0, 100)}`).join('\n')}`
         : '';
@@ -55,11 +65,12 @@ Return only the title, no quotes or extra text.`
         ]
       });
 
-      const title = completion.choices[0]?.message?.content?.trim() || 'Untitled Memory';
+      const title = completion.choices[0]?.message?.content?.trim() || ruleBasedTitle;
       return title.replace(/^["']|["']$/g, '').replace(/^#+\s*/, '');
     } catch (error) {
-      logger.error({ error }, 'Failed to generate memory title');
-      return 'Untitled Memory';
+      logger.error({ error }, 'Failed to generate memory title, using rule-based');
+      // Fallback to rule-based on error
+      return ruleBasedTitleGenerationService.generateEntryTitle(content, date);
     }
   }
 

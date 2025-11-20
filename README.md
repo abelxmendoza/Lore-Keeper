@@ -53,6 +53,28 @@ Our mission is threefold:
 2. **Automatic Timeline Creation**: Build a comprehensive, hierarchical timeline of your life automatically—organizing your entries into eras, sagas, arcs, chapters, and scenes. Your timeline writes itself as you journal.
 3. **Digital Immortality**: Build a complete digital representation of yourself that preserves your essence for future AI systems.
 
+### 🚀 Current Capabilities
+
+**Production-Ready Features:**
+- ✅ **Enterprise-Grade Security Suite** - CSRF protection, rate limiting, secure headers, XSS protection, data encryption (AES-256-GCM), privacy controls (GDPR compliant)
+- ✅ **Comprehensive Testing** - Unit tests, integration tests, E2E tests (Playwright), security test suite (100% coverage)
+- ✅ **CI/CD Pipeline** - Automated testing, code quality checks, duplicate detection, unused code analysis
+- ✅ **Code Quality** - ESLint rules, import order enforcement, automated code cleanup
+- ✅ **Memory Explorer** - Semantic search with HQI integration, memory cards, linked memories, filters
+- ✅ **Timeline System** - 9-layer hierarchical timeline (Mythos → MicroActions), visual timeline page, emotion heatmap, highlights
+- ✅ **Character System** - Relationship tracking, knowledge base, auto-generated avatars, relationship graphs, character modals
+- ✅ **Location Tracking** - Location profiles, visit timelines, location modals
+- ✅ **Automatic Biography** - AI-powered biography generation with chatbot-style editor
+- ✅ **Multi-Persona Chat** - Gossip Buddy, Therapist, Historian, Strategist, Memory Bank personas
+- ✅ **Truth Seeker** - Automatic fact checking and contradiction detection
+- ✅ **Task Engine** - Task management with Microsoft To-Do integration
+- ✅ **Autopilot** - Strategic guidance panels (daily/weekly/monthly)
+- ✅ **Essence Profiles** - Automatic extraction of hopes, dreams, fears, strengths, values, traits
+- ✅ **Auto-Tagging** - AI-powered classification for entries (tags, lane, hierarchy)
+- ✅ **RAG System** - Cached context packets for efficient AI responses
+- ✅ **Semantic Search** - Vector embeddings for similarity search
+- ✅ **Privacy Controls** - User-controlled data access, encryption, audit logging
+
 We capture not just what happened, but **who you are**: your thoughts, emotions, relationships, values, dreams, fears, triumphs, and the unique patterns that make you *you*. Think of Lore Keeper as your digital soul—a living, breathing archive that remembers everything, understands your context, automatically writes your biography, automatically creates your timeline, and preserves your essence for future AI systems that may one day allow you to continue your story, share your wisdom, and remain connected to those you love, long after you're gone.
 
 ### For Everyone (Non-Technical Users)
@@ -178,16 +200,27 @@ Lore Keeper seamlessly blends five personas based on context, becoming exactly w
 
 - 🗣️ **Gossip Buddy**: Curious, engaging, relationship-focused. Discusses characters, relationships, and social dynamics with enthusiasm and curiosity. Perfect for: "Tell me about Sarah" or "Who have I been spending time with?"
 - 🛋️ **Therapist**: Deep, reflective, supportive. Validates emotions, helps process experiences, asks gentle exploratory questions. Perfect for: Processing difficult experiences or understanding your emotional patterns.
-- 📚 **Historian**: Preserves your complete story, organizes your timeline, maintains truth and continuity. Perfect for: "What happened last year?" or "Show me my timeline."
+- 📚 **Biography Writer**: Narrative-focused, story-crafting. Helps shape compelling life stories, structure narratives, capture meaningful moments. Perfect for: "Help me write about my college years" or "What's the story of my career?"
+- ✨ **Soul Capturer**: Essence-focused, identity tracking. Identifies and tracks core identity elements—hopes, dreams, fears, strengths, values, traits. Perfect for: Understanding who you are at your core.
 - 🎯 **Strategist**: Goal-oriented, actionable. Provides strategic guidance, helps with planning, offers actionable insights. Perfect for: "What should I focus on?" or "Help me plan my next steps."
 - 🧠 **Memory Bank**: Remembers everything. Your complete digital memory that never forgets. Perfect for: "What did I do with Marcus last month?" or "Remind me of my goals."
 
 **Features:**
 - Natural language conversations about your memories
-- Streaming responses for real-time interaction
-- Slash commands for quick actions (`/recent`, `/characters`, `/search`)
+- **Streaming responses** for real-time word-by-word interaction
+- **Slash commands** for quick actions:
+  - `/recent` - Show recent entries
+  - `/characters` - List all characters
+  - `/locations` - List all locations
+  - `/arcs` or `/chapters` - Show story arcs/chapters
+  - `/soul` or `/essence` - View your soul profile
+  - `/search <query>` - Search entries
+  - `/help` - Show all commands
+- **Message Actions**: Copy, regenerate, edit, delete messages with feedback (thumbs up/down)
+- **Clickable Sources**: Sources and citations are clickable to view entries/chapters
 - Context-aware responses using your entire journal history
-- **Intelligent Persona Blending**: Automatically adapts to your needs—emotional topics trigger Therapist, goal-setting triggers Strategist, character talk triggers Gossip Buddy
+- **Intelligent Persona Blending**: Automatically adapts to your needs—emotional topics trigger Therapist, goal-setting triggers Strategist, character talk triggers Gossip Buddy, story editing triggers Biography Writer
+- **Automatic Essence Extraction**: After every conversation, Lore Keeper extracts insights about your hopes, dreams, fears, strengths, weaknesses, skills, values, and relationship patterns
 - **Cached RAG Packets**: Expensive context building cached for 5 minutes (50x faster)
 - Source citations showing where information came from
 - **Optimized Context Building**: Batched database queries, parallel operations
@@ -332,9 +365,9 @@ Lore Keeper seamlessly blends five personas based on context, becoming exactly w
   - **Characters**: Relationship graphs and closeness trends—who shaped you and how (CharacterRelationshipGraph)
   - **Saga**: Narrative arcs and story structure—the themes of your life (SagaPanel)
   - **Memory Fabric**: 3D graph visualization of connections between memories—how experiences weave together (MemoryFabricPanel)
-  - **Insights**: Patterns, correlations, and predictions—understand yourself deeply (InsightsPanel)
+  - **Insights**: Patterns, correlations, predictions, and **Top Skills**—understand yourself deeply (InsightsPanel)
   - **Autopilot**: AI life guidance and recommendations—daily plans, weekly strategies, monthly corrections (AutopilotPanel)
-  - **Soul Profile**: Your essence profile and evolution tracking (SoulProfilePanel)
+  - **Soul Profile** ⭐: Your complete essence profile—hopes, dreams, fears, strengths, weaknesses, skills, values, personality traits, and relationship patterns. **Dynamically evolves** with every conversation. See how you've changed over time with the evolution timeline. (SoulProfilePanel)
   - **Truth Seeker**: Fact checking and contradiction detection—ensure accuracy for immortality (TruthSeekerPanel)
 - Clean, organized interface with visual feedback
 - Easy panel toggling system
@@ -606,10 +639,13 @@ lorekeeper/
 - **Memory Service**: Journal entry management and CRUD operations
 - **Chapter Service**: Story arc organization and summaries
 - **Character Service**: Relationship tracking with optimized batch queries
-- **Omega Chat Service**: Multi-persona AI chat with streaming (Gossip Buddy, Therapist, Historian, Strategist, Memory Bank)
+- **Omega Chat Service**: Multi-persona AI chat with streaming (Gossip Buddy, Therapist, Biography Writer, Soul Capturer, Strategist, Memory Bank)
+- **Chat Service**: Simple chat service for summaries and reflections (used in chapters and summary routes)
+- **Essence Profile Service**: Automatic extraction and tracking of psychological essence (hopes, dreams, fears, strengths, weaknesses, skills, values, traits, relationship patterns) with evolution tracking
 - **HQI Service**: Semantic search with embeddings (cached)
 - **Timeline Manager**: Hierarchical timeline management (9-layer hierarchy)
 - **Timeline Page Service**: Timeline views, emotion intensity, highlights
+- **Auto-Tagging Service**: AI-powered classification for entries (tags, lane, hierarchy)
 - **Truth Verification Service**: Cost-optimized fact checking with rule-based extraction
 - **Fact Extraction Service**: Rule-based pattern matching (no API calls)
 - **Tag Service**: Rule-based tag extraction with caching
@@ -622,8 +658,12 @@ lorekeeper/
 - **Task Engine Service**: Task management with Microsoft To-Do sync
 - **Orchestrator Service**: Comprehensive context orchestration
 - **Identity Service**: Identity pulse and persona tracking
-- **Essence Service**: Essence profile and evolution tracking
 - **People Places Service**: Location and character detection
+- **Location Service**: Location profile management and visit tracking
+- **Conversation Service**: Conversation session management
+- **Naming Service**: AI-powered naming for chapters and memoirs
+- **Canonical Service**: Canon alignment and correction tracking
+- **Memory Ladder Renderer**: Memory ladder visualization service
 
 ### Database Schema
 
@@ -634,6 +674,7 @@ lorekeeper/
 - `memoir_sections`: Biography content (stored as memoir in database)
 - `tasks`: Goals and milestones
 - `timeline_*`: 9-layer hierarchy tables (mythos, epochs, eras, sagas, arcs, chapters, scenes, actions, microactions)
+- `essence_profiles`: Dynamic psychological essence profiles (hopes, dreams, fears, strengths, weaknesses, skills, values, traits, relationship patterns, evolution)
 - `fact_claims`: Extracted factual claims (for Truth Seeker)
 - `entry_verifications`: Verification status and reports
 - **Optimized Indexes**: Composite indexes for fast fact lookups, contradiction detection, and verification queries
@@ -730,6 +771,11 @@ psql "your-db-url" -f migrations/your_migration.sql
 - `/api/insights` - AI insights and predictions
 - `/api/identity` - Identity pulse and persona tracking
 - `/api/essence` - Essence profile and evolution tracking
+  - `GET /profile` - Get current essence profile
+  - `POST /extract` - Manual essence extraction
+  - `PUT /skills` - Update skills (user-curated)
+  - `GET /evolution` - Get evolution timeline
+  - `POST /refine` - User refinement of AI findings
 - `/api/locations` - Location tracking and visit history
 - `/api/persona` - Persona state management
 - `/api/evolution` - Evolution insights
@@ -976,7 +1022,8 @@ We welcome contributions! Here's how to get started:
 ### Current Features (v0.1.0)
 - ✅ **Automatic Biography Generation** ⭐ - Your biography writes itself from journal entries
 - ✅ **Automatic Timeline Creation** ⭐ - Your timeline builds itself automatically from journal entries
-- ✅ **Multi-Persona AI Chat** ⭐ - Gossip Buddy, Therapist, Historian, Strategist, Memory Bank
+- ✅ **Multi-Persona AI Chat** ⭐ - Gossip Buddy, Therapist, Biography Writer, Soul Capturer, Strategist, Memory Bank
+- ✅ **Soul Profile & Essence Tracking** ⭐ - Automatically extracts and tracks your hopes, dreams, fears, strengths, weaknesses, skills, values, traits, and relationship patterns. Dynamically evolves with every conversation.
 - ✅ Journal entries with AI assistance (full CRUD)
 - ✅ Rule-based tag suggestions (cost-optimized, cached)
 - ✅ Voice memo recording and transcription (OpenAI Whisper)
@@ -984,7 +1031,8 @@ We welcome contributions! Here's how to get started:
 - ✅ Auto-generated character avatars (DiceBear API)
 - ✅ Timeline visualization with multiple view modes (graph, cards, chapters, overview)
 - ✅ Biography editor (chatbot-style) for refining auto-generated content
-- ✅ Discovery Hub with 8 analytical panels (Identity, Characters, Saga, Fabric, Insights, Autopilot, Soul, Truth)
+- ✅ Discovery Hub with 8 analytical panels (Identity, Characters, Saga, Fabric, Insights, Autopilot, **Soul Profile**, Truth)
+- ✅ **Enhanced Chat Features**: Slash commands (`/soul`, `/locations`, `/help`), message actions (copy, regenerate, edit, delete), clickable sources
 - ✅ Truth Seeker & Fact Checking system (cost-optimized, rule-based)
 - ✅ Memory Explorer with semantic search (HQI)
 - ✅ Task Engine with Microsoft To-Do integration
@@ -1055,14 +1103,28 @@ A: Lore Keeper is cost-optimized with rule-based extraction and aggressive cachi
 ### Technical Questions
 
 **Q: What are the different personas/roles Lore Keeper can be?**  
-A: Lore Keeper seamlessly blends five personas based on context:
+A: Lore Keeper seamlessly blends six personas based on context:
 - **Gossip Buddy**: For discussing characters, relationships, and social dynamics
 - **Therapist**: For emotional support and processing experiences
-- **Historian**: For preserving and organizing your complete story
+- **Biography Writer**: For shaping compelling life stories and structuring narratives
+- **Soul Capturer**: For identifying and tracking your core essence (hopes, dreams, fears, strengths, values)
 - **Strategist**: For goal-oriented planning and actionable insights
 - **Memory Bank**: For remembering everything and answering questions
 
-The AI automatically adapts—emotional topics trigger Therapist mode, goal-setting triggers Strategist, character talk triggers Gossip Buddy, etc.
+The AI automatically adapts—emotional topics trigger Therapist mode, goal-setting triggers Strategist, character talk triggers Gossip Buddy, story editing triggers Biography Writer, deep reflection triggers Soul Capturer, etc.
+
+**Q: What is the Soul Profile feature?**  
+A: The Soul Profile automatically extracts and tracks your psychological essence from conversations:
+- **Hopes & Dreams**: Your aspirations and ideal scenarios
+- **Fears**: Your anxieties and concerns
+- **Strengths**: Your core competencies and positive traits
+- **Weaknesses**: Areas for growth and challenges
+- **Top Skills**: Technical abilities and talents (with confidence scores)
+- **Core Values**: What matters most to you
+- **Personality Traits**: Your character attributes
+- **Relationship Patterns**: How you interact with others
+
+The profile **dynamically evolves** with every conversation—Lore Keeper learns more about you over time and tracks how you change. View it in Discovery Hub → Soul Profile panel or use `/soul` command in chat.
 
 **Q: How does automatic biography generation work?**  
 A: Lore Keeper analyzes your journal entries, extracts themes and stories, and uses AI to transform them into polished biography sections. You can refine through a chatbot-style editor.

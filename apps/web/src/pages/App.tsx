@@ -38,6 +38,7 @@ import { PrivacySecurityPage } from '../components/security/PrivacySecurityPage'
 import { PrivacySettings } from '../components/security/PrivacySettings';
 import { PrivacyPolicy } from '../components/security/PrivacyPolicy';
 import { DiscoveryHub } from '../components/discovery/DiscoveryHub';
+import { ContinuityDashboard } from '../components/continuity/ContinuityDashboard';
 
 const formatRange = (days = 7) => {
   const end = new Date();
@@ -50,7 +51,7 @@ const formatRange = (days = 7) => {
   };
 };
 
-type SurfaceKey = 'chat' | 'timeline' | 'search' | 'characters' | 'locations' | 'memoir' | 'lorebook' | 'subscription' | 'pricing' | 'security' | 'privacy-settings' | 'privacy-policy' | 'discovery';
+type SurfaceKey = 'chat' | 'timeline' | 'search' | 'characters' | 'locations' | 'memoir' | 'lorebook' | 'subscription' | 'pricing' | 'security' | 'privacy-settings' | 'privacy-policy' | 'discovery' | 'continuity';
 
 
 

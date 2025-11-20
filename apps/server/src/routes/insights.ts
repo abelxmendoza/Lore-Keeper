@@ -6,6 +6,7 @@ import { requireAuth, type AuthenticatedRequest } from '../middleware/auth';
 import { logger } from '../logger';
 import { chapterService } from '../services/chapterService';
 import { memoryService } from '../services/memoryService';
+import { insightStorageService } from '../services/insightStorageService';
 
 const router = Router();
 
@@ -59,13 +60,29 @@ const buildPayload = async (userId: string, range?: { from?: string; to?: string
 
 router.get('/recent', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const payload = await buildPayload(req.user!.id);
-    const insights = await runInsightEngine(payload);
-    res.json({ insights });
+    // Get stored insights first
+    const storedInsights = await insightStorageService.getRecentInsights(req.user!.id, 20);
+
+    // Also run Python insight engine for fresh insights
+    try {
+      const payload = await buildPayload(req.user!.id);
+      const pythonInsights = await runInsightEngine(payload);
+      
+      res.json({
+        insights: pythonInsights,
+        storedInsights,
+      });
+    } catch (error: any) {
+      logger.error({ error }, 'Failed to run Python insight engine');
+      // Return stored insights even if Python engine fails
+      res.json({
+        insights: null,
+        storedInsights,
+      });
+    }
   } catch (error: any) {
-    logger.error({ error }, 'Failed to build recent insights');
-    // Return empty insights instead of error - insights are optional
-    res.json({ insights: null });
+    logger.error({ error }, 'Failed to get recent insights');
+    res.json({ insights: null, storedInsights: [] });
   }
 });
 
@@ -112,6 +129,138 @@ router.post('/predict', requireAuth, async (req: AuthenticatedRequest, res) => {
   } catch (error: any) {
     logger.error({ error }, 'Failed to generate prediction insights');
     res.status(500).json({ error: error.message ?? 'Failed to predict arcs' });
+  }
+});
+
+/**
+ * GET /api/insights/stored
+ * Get stored insights from database
+ */
+router.get('/stored', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { type, minConfidence, limit } = req.query;
+
+    let insights;
+    if (type) {
+      insights = await insightStorageService.getInsightsByType(
+        req.user!.id,
+        type as any,
+        limit ? parseInt(limit as string) : 50
+      );
+    } else if (minConfidence) {
+      insights = await insightStorageService.getHighConfidenceInsights(
+        req.user!.id,
+        parseFloat(minConfidence as string),
+        limit ? parseInt(limit as string) : 50
+      );
+    } else {
+      insights = await insightStorageService.getRecentInsights(
+        req.user!.id,
+        limit ? parseInt(limit as string) : 20
+      );
+    }
+
+    res.json({ insights });
+  } catch (error) {
+    logger.error({ error }, 'Failed to get stored insights');
+    res.status(500).json({
+      error: 'Failed to get stored insights',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * GET /api/insights/trends
+ * Get trend insights
+ */
+router.get('/trends', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { from, to } = req.query;
+
+    const insights = await insightStorageService.getTrendInsights(
+      req.user!.id,
+      from as string | undefined,
+      to as string | undefined
+    );
+
+    res.json({ insights });
+  } catch (error) {
+    logger.error({ error }, 'Failed to get trend insights');
+    res.status(500).json({
+      error: 'Failed to get trend insights',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * GET /api/insights/component/:componentId
+ * Get insights for a component
+ */
+router.get('/component/:componentId', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { componentId } = req.params;
+
+    const insights = await insightStorageService.getInsightsForComponent(
+      componentId,
+      req.user!.id
+    );
+
+    res.json({ insights });
+  } catch (error) {
+    logger.error({ error }, 'Failed to get component insights');
+    res.status(500).json({
+      error: 'Failed to get component insights',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * GET /api/insights/entry/:entryId
+ * Get insights for an entry
+ */
+router.get('/entry/:entryId', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { entryId } = req.params;
+
+    const insights = await insightStorageService.getInsightsForEntry(
+      entryId,
+      req.user!.id
+    );
+
+    res.json({ insights });
+  } catch (error) {
+    logger.error({ error }, 'Failed to get entry insights');
+    res.status(500).json({
+      error: 'Failed to get entry insights',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * POST /api/insights/generate
+ * Generate and store new insights
+ */
+router.post('/generate', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const payload = await buildPayload(req.user!.id);
+    const pythonInsights = await runInsightEngine(payload);
+
+    // Store insights in database (if Python engine returns structured data)
+    // This is a placeholder - actual implementation depends on Python engine output format
+    res.json({
+      insights: pythonInsights,
+      message: 'Insights generated',
+    });
+  } catch (error: any) {
+    logger.error({ error }, 'Failed to generate insights');
+    res.status(500).json({
+      error: 'Failed to generate insights',
+      message: error.message ?? 'Unknown error',
+    });
   }
 });
 

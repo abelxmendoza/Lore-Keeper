@@ -90,13 +90,20 @@ class ChapterInsightsService {
 
   async buildProfiles(userId: string): Promise<ChapterProfile[]> {
     try {
+      // Try to get cached insights first
+      const { chapterInsightsCacheService } = await import('./chapterInsightsCacheService');
+      const cached = await chapterInsightsCacheService.getCachedInsights(userId);
+      if (cached) {
+        return cached;
+      }
+
       const [chapters, entries] = await Promise.all([
         chapterService.listChapters(userId),
         memoryService.searchEntries(userId, { limit: 400 })
       ]);
       const resolved = correctionService.applyCorrectionsToEntries(entries);
 
-      return chapters.map((chapter) => {
+      const profiles = chapters.map((chapter) => {
       const chapterEntries = resolved.filter((entry) => entry.chapter_id === chapter.id);
       const { tagCounts, moodCounts, people, places } = this.extractCounts(chapterEntries);
       const traits = this.inferTraits(Array.from(tagCounts.keys()));
@@ -116,6 +123,12 @@ class ChapterInsightsService {
         timeline
       } satisfies ChapterProfile;
     });
+
+      // Cache the profiles for future use
+      const { chapterInsightsCacheService } = await import('./chapterInsightsCacheService');
+      await chapterInsightsCacheService.cacheInsights(userId, profiles);
+
+      return profiles;
     } catch (error) {
       // Return empty array on error (e.g., tables don't exist)
       return [];

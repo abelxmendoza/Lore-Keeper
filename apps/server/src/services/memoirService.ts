@@ -4,6 +4,7 @@ import { v4 as uuid } from 'uuid';
 import { config } from '../config';
 import { logger } from '../logger';
 import { supabaseAdmin } from './supabaseClient';
+import { memoirCacheService } from './memoirCacheService';
 
 const openai = new OpenAI({ apiKey: config.openAiKey });
 
@@ -34,6 +35,12 @@ type MemoirOutline = {
 
 class MemoirService {
   async getOutline(userId: string): Promise<MemoirOutline> {
+    // Try cached first
+    const cached = await memoirCacheService.getCachedMemoir(userId);
+    if (cached) {
+      return cached;
+    }
+
     const { data, error } = await supabaseAdmin
       .from('memoir_outlines')
       .select('*')
@@ -50,10 +57,11 @@ class MemoirService {
         autoUpdate: true
       };
       await this.saveOutline(userId, defaultOutline);
+      await memoirCacheService.cacheMemoir(userId, defaultOutline);
       return defaultOutline;
     }
 
-    return {
+    const outline = {
       id: data.id,
       title: data.title || 'My Memoir',
       sections: (data.sections as MemoirSection[]) || [],
@@ -61,6 +69,9 @@ class MemoirService {
       autoUpdate: data.auto_update ?? true,
       metadata: (data.metadata as { languageStyle?: string; originalDocument?: boolean }) || {}
     };
+
+    await memoirCacheService.cacheMemoir(userId, outline);
+    return outline;
   }
 
   async saveOutline(userId: string, outline: MemoirOutline): Promise<void> {

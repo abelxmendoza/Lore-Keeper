@@ -5,6 +5,8 @@ import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { ColorCodedTimeline } from '../timeline/ColorCodedTimeline';
 import { ChatComposer } from '../chat/ChatComposer';
+import { MemoryComponents } from './MemoryComponents';
+import { KnowledgeGraphViewer } from '../graph/KnowledgeGraphViewer';
 import { fetchJson } from '../../lib/api';
 import { memoryEntryToCard, type MemoryCard, type LinkedMemory } from '../../types/memory';
 
@@ -48,6 +50,17 @@ const tabs: Array<{ key: TabKey; label: string; icon: typeof FileText }> = [
   { key: 'timeline', label: 'Timeline', icon: Clock },
   { key: 'metadata', label: 'Metadata', icon: Database }
 ];
+
+type MemoryComponent = {
+  id: string;
+  component_type: string;
+  text: string;
+  characters_involved: string[];
+  location?: string | null;
+  timestamp?: string | null;
+  tags: string[];
+  importance_score: number;
+};
 
 export const MemoryDetailModal = ({ memory, onClose, onNavigate, allMemories = [] }: MemoryDetailModalProps) => {
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
@@ -519,6 +532,15 @@ The user can ask questions about this memory, request to add details, update tag
                   )}
                 </div>
 
+                {/* Memory Components */}
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <Layers className="h-5 w-5 text-primary" />
+                    Memory Components
+                  </h3>
+                  <MemoryComponents entryId={memory.id} />
+                </div>
+
                 {/* Tags */}
                 {memory.tags.length > 0 && (
                   <div>
@@ -781,6 +803,15 @@ The user can ask questions about this memory, request to add details, update tag
             {/* Connections Tab */}
             {activeTab === 'connections' && (
               <div className="space-y-6">
+                {/* Knowledge Graph */}
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <Network className="h-5 w-5 text-primary" />
+                    Knowledge Graph
+                  </h3>
+                  <KnowledgeGraphViewer componentId={memory.id} />
+                </div>
+
                 {/* Characters */}
                 {memory.characters.length > 0 ? (
                   <div>

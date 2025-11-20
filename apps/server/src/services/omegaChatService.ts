@@ -16,8 +16,9 @@ import { extractTags, shouldPersistMessage } from '../utils/keywordDetector';
 import { correctionService } from './correctionService';
 import { timeEngine } from './timeEngine';
 import { locationService } from './locationService';
-import { chapterService } from './chapterService';
 import { supabaseAdmin } from './supabaseClient';
+import { ragPacketCacheService } from './ragPacketCacheService';
+import { essenceProfileService } from './essenceProfileService';
 
 const openai = new OpenAI({ apiKey: config.openAiKey });
 
@@ -59,6 +60,12 @@ class OmegaChatService {
    * Build comprehensive RAG packet with ALL lore knowledge
    */
   private async buildRAGPacket(userId: string, message: string) {
+    // Try to get cached RAG packet first (FREE - no expensive queries)
+    const cached = ragPacketCacheService.getCachedPacket(userId, message);
+    if (cached) {
+      return cached;
+    }
+
     // Get full orchestrator summary with error handling
     let orchestratorSummary: any = { timeline: { events: [], arcs: [] }, characters: [] };
     try {
@@ -97,33 +104,32 @@ class OmegaChatService {
     }
 
     // Fetch timeline hierarchy (eras, sagas, arcs) - comprehensive lore
+    // Batch all queries together for efficiency (ONE query instead of THREE)
     let timelineHierarchy: any = { eras: [], sagas: [], arcs: [] };
     try {
-      // Fetch eras
-      const { data: erasData } = await supabaseAdmin
-        .from('eras')
-        .select('*')
-        .eq('user_id', userId)
-        .order('start_date', { ascending: false });
-      
-      // Fetch sagas
-      const { data: sagasData } = await supabaseAdmin
-        .from('sagas')
-        .select('*')
-        .eq('user_id', userId)
-        .order('start_date', { ascending: false });
-      
-      // Fetch arcs
-      const { data: arcsData } = await supabaseAdmin
-        .from('arcs')
-        .select('*')
-        .eq('user_id', userId)
-        .order('start_date', { ascending: false });
+      // Batch fetch all timeline hierarchy in parallel
+      const [erasResult, sagasResult, arcsResult] = await Promise.all([
+        supabaseAdmin
+          .from('eras')
+          .select('*')
+          .eq('user_id', userId)
+          .order('start_date', { ascending: false }),
+        supabaseAdmin
+          .from('sagas')
+          .select('*')
+          .eq('user_id', userId)
+          .order('start_date', { ascending: false }),
+        supabaseAdmin
+          .from('arcs')
+          .select('*')
+          .eq('user_id', userId)
+          .order('start_date', { ascending: false })
+      ]);
 
       timelineHierarchy = {
-        eras: erasData || [],
-        sagas: sagasData || [],
-        arcs: arcsData || []
+        eras: erasResult.data || [],
+        sagas: sagasResult.data || [],
+        arcs: arcsResult.data || []
       };
     } catch (error) {
       logger.debug({ error }, 'Failed to fetch timeline hierarchy, continuing');
@@ -267,7 +273,7 @@ class OmegaChatService {
       ...fabricNeighbors
     ];
 
-    return {
+    const packet = {
       orchestratorSummary,
       hqiResults,
       relatedEntries,
@@ -281,6 +287,11 @@ class OmegaChatService {
       timelineHierarchy,
       allPeoplePlaces
     };
+
+    // Cache the RAG packet for future use
+    ragPacketCacheService.cachePacket(userId, message, packet);
+
+    return packet;
   }
 
   /**

@@ -218,98 +218,130 @@ router.get('/list', requireAuth, async (req: AuthenticatedRequest, res) => {
     }
 
     if (charactersData && charactersData.length > 0) {
-      // Get memory counts and relationship counts for each character
-      const charactersWithStats = await Promise.all(
-        charactersData.map(async (char) => {
-          const { count: memoryCount } = await supabaseAdmin
-            .from('character_memories')
-            .select('*', { count: 'exact', head: true })
-            .eq('character_id', char.id);
+      const characterIds = charactersData.map(c => c.id);
 
-          const { count: relationshipCount } = await supabaseAdmin
-            .from('character_relationships')
-            .select('*', { count: 'exact', head: true })
-            .or(`source_character_id.eq.${char.id},target_character_id.eq.${char.id}`);
+      // Batch query memory counts for all characters (ONE query instead of N)
+      const { data: memoryCountsData } = await supabaseAdmin
+        .from('character_memories')
+        .select('character_id')
+        .in('character_id', characterIds);
 
-          // Extract social_media from metadata if it exists
-          const metadata = (char.metadata || {}) as Record<string, unknown>;
-          const social_media = metadata.social_media as Record<string, string> | undefined;
+      const memoryCounts = new Map<string, number>();
+      memoryCountsData?.forEach(mem => {
+        memoryCounts.set(mem.character_id, (memoryCounts.get(mem.character_id) || 0) + 1);
+      });
 
-          // Get relationships
-          const { data: relationships } = await supabaseAdmin
-            .from('character_relationships')
-            .select('*')
-            .or(`source_character_id.eq.${char.id},target_character_id.eq.${char.id}`)
-            .limit(50);
+      // Batch query relationships for all characters (ONE query instead of N)
+      const { data: allRelationships } = await supabaseAdmin
+        .from('character_relationships')
+        .select('*')
+        .or(`source_character_id.in.(${characterIds.join(',')}),target_character_id.in.(${characterIds.join(',')})`);
 
-          // Get character names for relationships
-          const relationshipCharacterIds = new Set<string>();
-          relationships?.forEach((rel) => {
-            if (rel.source_character_id === char.id) {
-              relationshipCharacterIds.add(rel.target_character_id);
-            } else {
-              relationshipCharacterIds.add(rel.source_character_id);
-            }
-          });
+      // Group relationships by character
+      const relationshipsByCharacter = new Map<string, typeof allRelationships>();
+      const relationshipCounts = new Map<string, number>();
+      
+      allRelationships?.forEach(rel => {
+        // Add to source character
+        if (!relationshipsByCharacter.has(rel.source_character_id)) {
+          relationshipsByCharacter.set(rel.source_character_id, []);
+        }
+        relationshipsByCharacter.get(rel.source_character_id)!.push(rel);
+        relationshipCounts.set(rel.source_character_id, (relationshipCounts.get(rel.source_character_id) || 0) + 1);
 
-          const { data: relatedCharacters } = relationshipCharacterIds.size > 0
-            ? await supabaseAdmin
-                .from('characters')
-                .select('id, name')
-                .in('id', Array.from(relationshipCharacterIds))
-            : { data: [] };
+        // Add to target character
+        if (!relationshipsByCharacter.has(rel.target_character_id)) {
+          relationshipsByCharacter.set(rel.target_character_id, []);
+        }
+        relationshipsByCharacter.get(rel.target_character_id)!.push(rel);
+        relationshipCounts.set(rel.target_character_id, (relationshipCounts.get(rel.target_character_id) || 0) + 1);
+      });
 
-          const characterNameMap = new Map(
-            relatedCharacters?.map((c) => [c.id, c.name]) || []
-          );
+      // Get all unique character IDs from relationships
+      const relatedCharacterIds = new Set<string>();
+      allRelationships?.forEach(rel => {
+        relatedCharacterIds.add(rel.source_character_id);
+        relatedCharacterIds.add(rel.target_character_id);
+      });
 
-          // Get shared memories
-          const { data: memories } = await supabaseAdmin
-            .from('character_memories')
-            .select('id, journal_entry_id, created_at, summary')
-            .eq('character_id', char.id)
-            .order('created_at', { ascending: false })
-            .limit(20);
+      // Batch query character names (ONE query instead of N)
+      const { data: relatedCharacters } = relatedCharacterIds.size > 0
+        ? await supabaseAdmin
+            .from('characters')
+            .select('id, name')
+            .in('id', Array.from(relatedCharacterIds))
+        : { data: [] };
 
-          return {
-            id: char.id,
-            name: char.name,
-            alias: char.alias || [],
-            pronouns: char.pronouns,
-            archetype: char.archetype,
-            role: char.role,
-            status: char.status || 'active',
-            first_appearance: char.first_appearance,
-            summary: char.summary,
-            tags: char.tags || [],
-            avatar_url: char.avatar_url || null,
-            social_media: social_media || undefined,
-            metadata: metadata,
-            created_at: char.created_at,
-            updated_at: char.updated_at,
-            memory_count: memoryCount || 0,
-            relationship_count: relationshipCount || 0,
-            relationships: relationships?.map((rel) => {
-              const relatedCharId = rel.source_character_id === char.id ? rel.target_character_id : rel.source_character_id;
-              return {
-                id: rel.id,
-                character_id: relatedCharId,
-                character_name: characterNameMap.get(relatedCharId) || 'Unknown',
-                relationship_type: rel.relationship_type,
-                closeness_score: rel.closeness_score,
-                summary: rel.summary,
-                status: rel.status
-              };
-            }) || [],
-            shared_memories: memories?.map((mem) => ({
-              id: mem.id,
-              entry_id: mem.journal_entry_id,
-              date: mem.created_at,
-              summary: mem.summary || undefined
-            })) || []
-          };
-        })
+      const characterNameMap = new Map(
+        relatedCharacters?.map((c) => [c.id, c.name]) || []
       );
+
+      // Batch query memories for all characters (ONE query instead of N)
+      const { data: allMemories } = await supabaseAdmin
+        .from('character_memories')
+        .select('id, character_id, journal_entry_id, created_at, summary')
+        .in('character_id', characterIds)
+        .order('created_at', { ascending: false });
+
+      // Group memories by character
+      const memoriesByCharacter = new Map<string, typeof allMemories>();
+      allMemories?.forEach(mem => {
+        if (!memoriesByCharacter.has(mem.character_id)) {
+          memoriesByCharacter.set(mem.character_id, []);
+        }
+        const charMemories = memoriesByCharacter.get(mem.character_id)!;
+        if (charMemories.length < 20) { // Limit to 20 per character
+          charMemories.push(mem);
+        }
+      });
+
+      // Map results back to characters (in-memory operation - FAST)
+      const charactersWithStats = charactersData.map((char) => {
+        // Extract social_media from metadata if it exists
+        const metadata = (char.metadata || {}) as Record<string, unknown>;
+        const social_media = metadata.social_media as Record<string, string> | undefined;
+
+        const relationships = relationshipsByCharacter.get(char.id) || [];
+        const memories = memoriesByCharacter.get(char.id) || [];
+
+        return {
+          id: char.id,
+          name: char.name,
+          alias: char.alias || [],
+          pronouns: char.pronouns,
+          archetype: char.archetype,
+          role: char.role,
+          status: char.status || 'active',
+          first_appearance: char.first_appearance,
+          summary: char.summary,
+          tags: char.tags || [],
+          avatar_url: char.avatar_url || null,
+          social_media: social_media || undefined,
+          metadata: metadata,
+          created_at: char.created_at,
+          updated_at: char.updated_at,
+          memory_count: memoryCounts.get(char.id) || 0,
+          relationship_count: relationshipCounts.get(char.id) || 0,
+          relationships: relationships.slice(0, 50).map((rel) => {
+            const relatedCharId = rel.source_character_id === char.id ? rel.target_character_id : rel.source_character_id;
+            return {
+              id: rel.id,
+              character_id: relatedCharId,
+              character_name: characterNameMap.get(relatedCharId) || 'Unknown',
+              relationship_type: rel.relationship_type,
+              closeness_score: rel.closeness_score,
+              summary: rel.summary,
+              status: rel.status
+            };
+          }),
+          shared_memories: memories.map((mem) => ({
+            id: mem.id,
+            entry_id: mem.journal_entry_id,
+            date: mem.created_at,
+            summary: mem.summary || undefined
+          }))
+        };
+      });
 
       return res.json({ characters: charactersWithStats });
     }

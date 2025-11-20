@@ -1,11 +1,11 @@
-import { BookMarked, CalendarDays, MessageSquareText, Plus, Search, Sparkles, Users, BookOpen, MapPin, Crown, Shield, Compass } from 'lucide-react';
+import { BookMarked, CalendarDays, MessageSquareText, Plus, Search, Sparkles, Users, BookOpen, MapPin, Crown, Shield, Compass, TrendingUp } from 'lucide-react';
 
 import { Logo } from './Logo';
 import { Button } from './ui/button';
 
 interface SidebarProps {
-  activeSurface?: 'chat' | 'timeline' | 'search' | 'characters' | 'locations' | 'memoir' | 'lorebook' | 'subscription' | 'pricing' | 'security' | 'privacy-settings' | 'privacy-policy' | 'discovery';
-  onSurfaceChange?: (surface: 'chat' | 'timeline' | 'search' | 'characters' | 'locations' | 'memoir' | 'lorebook' | 'subscription' | 'pricing' | 'security' | 'privacy-settings' | 'privacy-policy' | 'discovery') => void;
+  activeSurface?: 'chat' | 'timeline' | 'search' | 'characters' | 'locations' | 'memoir' | 'lorebook' | 'subscription' | 'pricing' | 'security' | 'privacy-settings' | 'privacy-policy' | 'discovery' | 'continuity';
+  onSurfaceChange?: (surface: 'chat' | 'timeline' | 'search' | 'characters' | 'locations' | 'memoir' | 'lorebook' | 'subscription' | 'pricing' | 'security' | 'privacy-settings' | 'privacy-policy' | 'discovery' | 'continuity') => void;
   onCreateChapter?: () => void;
   onToggleDevMode?: () => void;
   devModeEnabled?: boolean;

@@ -113,6 +113,79 @@ export const handleSlashCommand = async (
       }
     }
 
+    case 'soul':
+    case 'essence':
+    case 'profile': {
+      try {
+        const profile = await fetchJson<{ profile: any }>('/api/essence/profile');
+        const p = profile.profile;
+        
+        const parts: string[] = [];
+        
+        if (p.hopes?.length > 0) {
+          parts.push(`**Hopes:**\n${p.hopes.slice(0, 3).map((h: any) => `- ${h.text}`).join('\n')}`);
+        }
+        if (p.dreams?.length > 0) {
+          parts.push(`**Dreams:**\n${p.dreams.slice(0, 3).map((d: any) => `- ${d.text}`).join('\n')}`);
+        }
+        if (p.fears?.length > 0) {
+          parts.push(`**Fears:**\n${p.fears.slice(0, 3).map((f: any) => `- ${f.text}`).join('\n')}`);
+        }
+        if (p.strengths?.length > 0) {
+          parts.push(`**Strengths:**\n${p.strengths.slice(0, 3).map((s: any) => `- ${s.text}`).join('\n')}`);
+        }
+        if (p.topSkills?.length > 0) {
+          parts.push(`**Top Skills:**\n${p.topSkills.slice(0, 5).map((s: any) => `- ${s.skill}`).join('\n')}`);
+        }
+        
+        return {
+          type: 'message',
+          content: parts.length > 0 
+            ? `**Your Soul Profile**\n\n${parts.join('\n\n')}`
+            : '**Your Soul Profile**\n\nStill learning about you... Start chatting to build your profile!'
+        };
+      } catch (error) {
+        return {
+          type: 'message',
+          content: `Error fetching soul profile: ${error instanceof Error ? error.message : 'Unknown error'}`
+        };
+      }
+    }
+
+    case 'locations': {
+      try {
+        const locations = await fetchJson<any[]>('/api/locations');
+        const formatted = locations
+          .slice(0, 15)
+          .map((l: any) => `- **${l.name}**${l.visitCount ? ` (visited ${l.visitCount} times)` : ''}${l.firstVisited ? ` - First: ${new Date(l.firstVisited).toLocaleDateString()}` : ''}`)
+          .join('\n');
+        
+        return {
+          type: 'message',
+          content: `**Locations**\n\n${formatted || 'No locations found.'}`
+        };
+      } catch (error) {
+        return {
+          type: 'message',
+          content: `Error fetching locations: ${error instanceof Error ? error.message : 'Unknown error'}`
+        };
+      }
+    }
+
+    case 'help': {
+      return {
+        type: 'message',
+        content: `**Available Commands**\n\n` +
+          `- \`/recent\` - Show recent entries\n` +
+          `- \`/search <query>\` - Search entries\n` +
+          `- \`/characters\` - List all characters\n` +
+          `- \`/locations\` - List all locations\n` +
+          `- \`/arcs\` or \`/chapters\` - Show story arcs/chapters\n` +
+          `- \`/soul\` or \`/essence\` - View your soul profile\n` +
+          `- \`/help\` - Show this help message`
+      };
+    }
+
     case 'debug': {
       if (process.env.NODE_ENV !== 'development') {
         return {
