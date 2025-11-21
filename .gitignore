@@ -54,6 +54,7 @@ playwright/.cache/
 
 # TypeScript
 *.tsbuildinfo
+vite.config.js
 
 # Misc
 .cache/
