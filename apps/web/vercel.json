@@ -1,5 +1,5 @@
 {
-  "installCommand": "pnpm install --no-frozen-lockfile",
+  "installCommand": "pnpm install --filter ./... --workspace-root=false --no-frozen-lockfile",
   "buildCommand": "pnpm build",
   "outputDirectory": "dist"
 }
